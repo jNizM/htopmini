@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.5.1
-; Version .......: 2013.10.14-1159
+; Description ...: htopmini v0.6
+; Version .......: 2013.10.14-1518
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.14-1159
+;@Ahk2Exe-SetVersion 2013.10.14-1518
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -37,7 +37,8 @@ GuiID := WinExist()
 Gui, Margin, 10, 10
 Gui, Color, 000000
 Gui, Font, cFFFFFF, Consolas
-Gui, Add, Text,     xm     ym w300 gMove vTime01
+Gui, Add, Text,     xm     ym w250 gMove vTime01
+Gui, Add, Text,     xm+260 ym w170 0x202 vTemp01,
 Gui, Add, Text,     xm     y+2  w430 h1 0x7
 
 Gui, Add, Text,     xm+40   y+4 w80 0x202, Used
@@ -113,10 +114,11 @@ Gui, Add, Button,   xm+350 yp w80 -Theme 0x8000 gClose, Close
 Gui, Show, AutoSize, htopmini
 WinSet, Transparent, 150, htopmini
 SetTimer, UpdateTime, 1000
-SetTimer, UpdateMemory, 2000
-SetTimer, UpdateTraffic, 2000
+SetTimer, UpdateWeather, -1000
+SetTimer, UpdateMemory, -1000
+SetTimer, UpdateTraffic, 1000
 SetTimer, UpdateDrive, -1000
-SetTimer, ClearM, 60000
+;SetTimer, ClearM, 60000
 return
 
 Move:
@@ -127,12 +129,23 @@ UpdateTime:
     GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(DllCall("GetTickCount64") / 1000)
 return
 
+UpdateWeather:
+    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=693838&u=c")
+    RegExMatch(url, "city\=\""\w*", varCity)
+    StringTrimLeft, varCityA, varCity, 6
+    RegExMatch(url, "(\-)?\d{1,3}\sC", varTemp)
+    StringTrimRight, varTempA, varTemp, 2
+    GuiControl,, Temp01, % varCityA ", " varTempA " °C"
+    SetTimer, UpdateWeather, 60000
+return
+
 UpdateMemory:
     GuiControl,, RAM1, % Round(GlobalMemoryStatusEx(2) - GlobalMemoryStatusEx(3), 2) " MB"
     GuiControl,, RAM2, % GlobalMemoryStatusEx(3) " MB"
     GuiControl,, RAM3, % GlobalMemoryStatusEx(2) " MB"
     GuiControl, % (GlobalMemoryStatusEx(1) <= "75") ? "+c00FF00" : (GlobalMemoryStatusEx(1) <= "90") ? "+cFFA500" : "+cFF0000", RAM4
     GuiControl,, RAM4, % GlobalMemoryStatusEx(1)
+    SetTimer, UpdateMemory, 2000
 return
 
 UpdateTraffic:
@@ -179,7 +192,7 @@ UpdateDrive:
                     : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
-	loop, Parse, DrvLstNtwrk
+    loop, Parse, DrvLstNtwrk
     {
         DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
         DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
@@ -191,7 +204,7 @@ UpdateDrive:
                     : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
-	SetTimer, UpdateDrive, 2000
+    SetTimer, UpdateDrive, 5000
 return
 
 ClearM:
@@ -207,11 +220,8 @@ ClearL:
 return
 
 Transparency:
-	WinGet, curtrans, Transparent, ahk_id %GuiID%
-	if (curtrans = 150)
-		WinSet, Transparent, Off, htopmini
-	else
-		WinSet, Transparent, 150, htopmini
+    WinGet, ct, Transparent, ahk_id %GuiID%
+    WinSet, Transparent, % ct = "150" ? "Off" : "150" , htopmini
 return
 
 ShowHide:
@@ -222,7 +232,7 @@ ShowHide:
 Return
 
 OnTop:
-	WinSet, AlwaysOnTop, Toggle, ahk_id %GuiID%
+    WinSet, AlwaysOnTop, Toggle, ahk_id %GuiID%
 return
 
 Close:
@@ -234,6 +244,27 @@ return
 +WheelDown:: AdjustBrightness(-1)
 
 ; FUNCTIONS =========================================================================
+
+; DownloadToString ==================================================================
+DownloadToString(url, encoding="utf-8")
+{
+    static a := "AutoHotkey/" A_AhkVersion
+    if (!DllCall("LoadLibrary", "str", "wininet") || !(h := DllCall("wininet\InternetOpen", "str", a, "uint", 1, "ptr", 0, "ptr", 0, "uint", 0, "ptr")))
+        return 0
+    c := s := 0, o := ""
+    if (f := DllCall("wininet\InternetOpenUrl", "ptr", h, "str", url, "ptr", 0, "uint", 0, "uint", 0x80003000, "ptr", 0, "ptr"))
+    {
+        while (DllCall("wininet\InternetQueryDataAvailable", "ptr", f, "uint*", s, "uint", 0, "ptr", 0) && s > 0)
+        {
+            VarSetCapacity(b, s, 0)
+            DllCall("wininet\InternetReadFile", "ptr", f, "ptr", &b, "uint", s, "uint*", r)
+            o .= StrGet(&b, r >> (encoding = "utf-16" || encoding = "cp1200"), encoding)
+        }
+        DllCall("wininet\InternetCloseHandle", "ptr", f)
+    }
+    DllCall("wininet\InternetCloseHandle", "ptr", h)
+    return o
+}
 
 ; GlobalMemoryStatus ================================================================
 GlobalMemoryStatusEx(GMS = 1) {
@@ -327,21 +358,21 @@ FreeMemory() {
 
 ; DisplayBrightness =================================================================
 AdjustBrightness(V = 0) {
-	V := (GetKeyState("XButton1") && V > 0) ? V + 9 : (GetKeyState("XButton1") && V < 0) ? V - 9 : V
-	SB := (SB := DisplayGetBrightness() + V) > 255 ? 255 : SB < 0 ? 0 : SB
-	DisplaySetBrightness(SB)
+    V := (GetKeyState("XButton1") && V > 0) ? V + 9 : (GetKeyState("XButton1") && V < 0) ? V - 9 : V
+    SB := (SB := DisplayGetBrightness() + V) > 255 ? 255 : SB < 0 ? 0 : SB
+    DisplaySetBrightness(SB)
 }
 DisplaySetBrightness(SB = 128) {
-	loop, % VarSetCapacity(GB, 1536) / 6
-		NumPut((N := (SB + 128) * (A_Index - 1)) > 65535 ? 65535 : N, GB, 2 * (A_Index - 1), "UShort")
-	DllCall("RtlMoveMemory", UInt, &GB +  512, UInt, &GB, UInt, 512)
-	DllCall("RtlMoveMemory", UInt, &GB + 1024, UInt, &GB, UInt, 512)
-	return DllCall("SetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB), DllCall("ReleaseDC", UInt, 0, UInt, hDC)
+    loop, % VarSetCapacity(GB, 1536) / 6
+        NumPut((N := (SB + 128) * (A_Index - 1)) > 65535 ? 65535 : N, GB, 2 * (A_Index - 1), "UShort")
+    DllCall("RtlMoveMemory", UInt, &GB +  512, UInt, &GB, UInt, 512)
+    DllCall("RtlMoveMemory", UInt, &GB + 1024, UInt, &GB, UInt, 512)
+    return DllCall("SetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB), DllCall("ReleaseDC", UInt, 0, UInt, hDC)
 }
 DisplayGetBrightness(ByRef GB = "") {
-	VarSetCapacity(GB, 1536, 0)
-	DllCall("GetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB)
-	return NumGet(GB, 2, "UShort") - 128, DllCall("ReleaseDC", UInt, 0, UInt, hDC)
+    VarSetCapacity(GB, 1536, 0)
+    DllCall("GetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB)
+    return NumGet(GB, 2, "UShort") - 128, DllCall("ReleaseDC", UInt, 0, UInt, hDC)
 }
 
 ; LoadLibrary =======================================================================
