@@ -2,14 +2,14 @@
 ; AHK Version ...: AHK_L 1.1.15.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
 ; Description ...: htopmini
-; Version .......: v0.8.2
-; Modified ......: 2014.04.11-1927
+; Version .......: v0.8.3
+; Modified ......: 2014.04.11-2027
 ; Author ........: jNizM
 ; Licence .......: WTFPL (http://www.wtfpl.net/txt/copying/)
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion v0.8.2
+;@Ahk2Exe-SetVersion v0.8.3
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2014`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 ; ===================================================================================
@@ -42,13 +42,12 @@ Menu, Tray, DeleteAll
 Menu, Tray, NoStandard
 Menu, Tray, Add, Toggle Percentage, Menu_Percentage
 Menu, Tray, Add,
-Menu, Tray, Add, Toggle Transparency, Menu_Transparency
+Menu, Tray, Add, Reset Transparency, Menu_Transparency
 Menu, Tray, Add, Toggle AlwaysOnTop, Menu_AlwaysOnTop
 Menu, Tray, Add, Show/Hide, Menu_ShowHide
 Menu, Tray, Add,
 Menu, Tray, Add, Exit, Close
 Menu, Tray, Default, Show/Hide
-Menu, Tray, ToggleCheck, Toggle Transparency
 
 
 ; ###################################################################################
@@ -152,7 +151,7 @@ Gui, Add, Button,   xm+240 yp-6 w60 h20 -Theme 0x8000 gClear, Clear
 Gui, Add, Button,   xm+305 yp   w60 h20 -Theme 0x8000 gMinimi, Minimize
 Gui, Add, Button,   xm+370 yp   w60 h20 -Theme 0x8000 gClose, Close
 Gui, Show, % "AutoSize" (htopx ? " x" htopx " y" htopy : ""), % WinTitel
-WinSet, Transparent, 150, % WinTitel
+WinSet, Transparent, 170, % WinTitel
 
 SetTimer, UpdateTime, 1000
 SetTimer, UpdateWeather, -1000
@@ -187,12 +186,10 @@ return
 
 UpdateCPULoad:
     GuiControl,, CPU1, % GetProcessCount() " proc"
-    SetFormat, Float, 02
-    CPU := GetSystemTimes()
+    CPU := CPULoad()
     GuiControl,, CPU2, % CPU " % "
-    GuiControl, % (CPU <= "50") ? "+c00FF00" : (CPU <= "80") ? "+cFFA500" : "+cFF0000", CPU3
+    GuiControl, % ((CPU <= "50") ? "+c00FF00" : ((CPU <= "80") ? "+cFFA500" : "+cFF0000")), CPU3
     GuiControl,, CPU3, % CPU
-    SetFormat, Integer, % OldFormat
     SetTimer, UpdateCPULoad, 1000
 return
 
@@ -319,9 +316,7 @@ Menu_Percentage:
 return
 
 Menu_Transparency:
-    WinGet, ct, Transparent, %WinTitel%
-    WinSet, Transparent, % ct = "150" ? "Off" : "150", %WinTitel%
-    Menu, Tray, ToggleCheck, Toggle Transparency
+    WinSet, Transparent, 170, % name
 return
 
 Menu_AlwaysOnTop:
@@ -342,6 +337,9 @@ Menu_ShowHide:
         WinSet, AlwaysOnTop, Toggle, %WinTitel%
     }
 return
+
+^WheelUp::GUITrans(1)
+^WheelDown::GUITrans(0)
 
 
 ; ###################################################################################
@@ -367,6 +365,13 @@ WM_DEVICECHANGE(wParam, lParam, msg, hwnd)
         Gui, Destroy
         Gosub, MakeGui
     }
+}
+
+; GUITrans ==========================================================================
+GUITrans(b := 1)
+{
+    WinGet, ct, Transparent, % WinTitel
+    WinSet, Transparent, % ((b = 1) ? ct + 1 : ct - 1), % WinTitel
 }
 
 ; DownloadToString ==================================================================
@@ -403,14 +408,18 @@ GetProcessCount()
     return proc
 }
 
-; GetSystemTimes ====================================================================
-GetSystemTimes()
+; CPULoad ===========================================================================
+CPULoad()
 {
-   static oldIdleTime, oldKernelTime, oldUserTime
-   static lpIdleTime, lpKernelTime, lpUserTime
-   oldIdleTime := lpIdleTime, oldKernelTime := lpKernelTime, oldUserTime := lpUserTime
-   DllCall("Kernel32.dll\GetSystemTimes", "Int64P", lpIdleTime, "Int64P", lpKernelTime, "Int64P", lpUserTime)
-   return (1 - (lpIdleTime - oldIdleTime) / (lpKernelTime - oldKernelTime + lpUserTime - oldUserTime)) * 100
+    static PIT, PKT, PUT
+    if (Pit = "")
+    {
+        return 0, DllCall("GetSystemTimes", "Int64P", PIT, "Int64P", PKT, "Int64P", PUT)
+    }
+    DllCall("GetSystemTimes", "Int64P", CIT, "Int64P", CKT, "Int64P", CUT)
+    IdleTime := PIT - CIT, KernelTime := PKT - CKT, UserTime := PUT - CUT
+    SystemTime := KernelTime + UserTime 
+    return ((SystemTime - IdleTime) * 100) // SystemTime, PIT := CIT, PKT := CKT, PUT := CUT 
 }
 
 ; GlobalMemoryStatus ================================================================
