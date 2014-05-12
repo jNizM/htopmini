@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.7.4
-; Version .......: 2013.10.18-0918
+; Description ...: htopmini v0.7.5
+; Version .......: 2013.10.18-1012
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.18-0918
+;@Ahk2Exe-SetVersion 2013.10.18-1012
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -362,7 +362,8 @@ FormatSeconds(NumberOfSeconds, TimeFormat = "") {
     Time = 19990101
     Time += %NumberOfSeconds%, Seconds
     FormatTime, Output1, %Time%, %TimeFormat%
-    return Output1
+	FormatTime, Output2, %Time%, YDay
+    return return Output2-1 "d:" Output1
 }
 
 ; NetTraffic ========================================================================
