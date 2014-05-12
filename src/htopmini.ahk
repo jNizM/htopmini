@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
-; AHK Version ...: AHK_L 1.1.14.03 x64 Unicode
+; AHK Version ...: AHK_L 1.1.15.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
 ; Description ...: htopmini
-; Version .......: v0.8.1
-; Modified ......: 2014.04.08-1725
+; Version .......: v0.8.2
+; Modified ......: 2014.04.11-1927
 ; Author ........: jNizM
 ; Licence .......: WTFPL (http://www.wtfpl.net/txt/copying/)
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion v0.8.1
+;@Ahk2Exe-SetVersion v0.8.2
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2014`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 ; ===================================================================================
@@ -55,6 +55,7 @@ Menu, Tray, ToggleCheck, Toggle Transparency
 ; ### GUI MAIN                                                                    ###
 ; ###################################################################################
 
+MakeGui:
 Gui +LastFound -Caption +ToolWindow +hwndhMain
 Gui, Margin, 10, 10
 Gui, Color, 000000
@@ -97,7 +98,7 @@ DriveGet, DrvLstFxd, List, FIXED
 loop, Parse, DrvLstFxd
 {
     Gui, Font, cFFFFFF,
-    Gui, Add, Text,     xm     y+1 w30 0x200, F_%A_Loopfield%:\
+    Gui, Add, Text,     xm     y+1 w30 0x200 gDriveClick, F_%A_Loopfield%:\
     Gui, Font, c00FF00,
     Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
     Gui, Font, cFFFFFF,
@@ -111,7 +112,7 @@ DriveGet, DrvLstRmvbl, List, REMOVABLE
 loop, Parse, DrvLstRmvbl
 {
     Gui, Font, cFFFFFF,
-    Gui, Add, Text,     xm     y+1 w30 0x200, R_%A_Loopfield%:\
+    Gui, Add, Text,     xm     y+1 w30 0x200 gDriveClick, R_%A_Loopfield%:\
     Gui, Font, c00FF00,
     Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
     Gui, Font, cFFFFFF,
@@ -125,7 +126,7 @@ DriveGet, DrvLstNtwrk, List, NETWORK
 loop, Parse, DrvLstNtwrk
 {
     Gui, Font, cFFFFFF,
-    Gui, Add, Text,     xm     y+1 w30 0x200, N_%A_Loopfield%:\
+    Gui, Add, Text,     xm     y+1 w30 0x200 gDriveClick, N_%A_Loopfield%:\
     Gui, Font, c00FF00,
     Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
     Gui, Font, cFFFFFF,
@@ -150,8 +151,8 @@ Gui, Add, Text,     xm     y+10 w150 0x200 vOwnMem,
 Gui, Add, Button,   xm+240 yp-6 w60 h20 -Theme 0x8000 gClear, Clear
 Gui, Add, Button,   xm+305 yp   w60 h20 -Theme 0x8000 gMinimi, Minimize
 Gui, Add, Button,   xm+370 yp   w60 h20 -Theme 0x8000 gClose, Close
-Gui, Show, AutoSize, %WinTitel%
-WinSet, Transparent, 150, %WinTitel%
+Gui, Show, % "AutoSize" (htopx ? " x" htopx " y" htopy : ""), % WinTitel
+WinSet, Transparent, 150, % WinTitel
 
 SetTimer, UpdateTime, 1000
 SetTimer, UpdateWeather, -1000
@@ -162,14 +163,8 @@ SetTimer, UpdateDrive, -1000
 SetTimer, UpdateMemHtop, -1000
 
 OnMessage(0x201, "WM_LBUTTONDOWN")
-WM_LBUTTONDOWN(wParam, lParam, msg, hwnd)
-{
-    global hMain
-    if (hwnd = hMain)
-    {
-        PostMessage, 0xA1, 2,,, %WinTitel%
-    }
-}
+OnMessage(0x219, "WM_DEVICECHANGE")
+
 return
 
 
@@ -197,7 +192,7 @@ UpdateCPULoad:
     GuiControl,, CPU2, % CPU " % "
     GuiControl, % (CPU <= "50") ? "+c00FF00" : (CPU <= "80") ? "+cFFA500" : "+cFF0000", CPU3
     GuiControl,, CPU3, % CPU
-    SetFormat, Integer, %OldFormat%
+    SetFormat, Integer, % OldFormat
     SetTimer, UpdateCPULoad, 1000
 return
 
@@ -305,6 +300,10 @@ UpdateMemHtop:
     SetTimer, UpdateMemHtop, 2000
 return
 
+DriveClick:
+    Run, % SubStr(A_GuiControl, 3)
+Return
+
 Clear:
     ClearMemory()
     FreeMemory()
@@ -348,6 +347,27 @@ return
 ; ###################################################################################
 ; ### FUNCTIONS                                                                   ###
 ; ###################################################################################
+
+WM_LBUTTONDOWN(wParam, lParam, msg, hwnd)
+{
+    global hMain
+    if (hwnd = hMain)
+    {
+        PostMessage, 0xA1, 2,,, % WinTitel
+    }
+}
+
+WM_DEVICECHANGE(wParam, lParam, msg, hwnd)
+{
+    global hmain, htopx, htopy
+    if (wParam = 0x8000 || wParam = 0x8004)
+    {
+        Thread, NoTimers
+        WinGetPos, htopx, htopy,,, ahk_id %hmain%
+        Gui, Destroy
+        Gosub, MakeGui
+    }
+}
 
 ; DownloadToString ==================================================================
 DownloadToString(url, encoding := "utf-8")
