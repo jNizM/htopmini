@@ -2,14 +2,14 @@
 ; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
 ; Description ...: htopmini v0.7.2
-; Version .......: 2013.10.18-1129
+; Version .......: 2013.10.18-1956
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.18-1129
+;@Ahk2Exe-SetVersion 2013.10.18-1956
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -26,9 +26,8 @@ global WinTitel := "htopmini " A_Now
 global varPerc := 0
 global Weather_ID := "693838"                      ; Yahoo Weather Location ID
 global Weather_DG := "c"                           ; Celius = c | Fahrenheit = f
-global OSBuild := GetVersionEx()
-global mylogData := ""
 global ownPID := DllCall(Kernel32.GetCurrentProcessId)
+global mylogData := ""
 
 
 ; ###################################################################################
@@ -135,9 +134,10 @@ Gui, Add, Text,     xm     y+1  w30 0x200, OUT:
 Gui, Font, cFF0000,
 Gui, Add, Text,     xm+40  yp   w80 0x202 vOU1,
 Gui, Add, Progress, xm+130 yp+1 w170 h10 cFF0000 Range0-2000 -0x1 vOU2,
+Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
-Gui, Font, c00FF00,
-Gui, Add, Edit,     xm     y+7 0x0800 w430 r10 vMyLog
+;Gui, Font, c00FF00,
+;Gui, Add, Edit,     xm     y+7 0x0800 w430 r10 vMyLog
 Gui, Font, cFFFFFF,
 Gui, Add, Text,     xm     y+15 w150 0x200 vOwnMem,
 Gui, Add, Button,   xm+170 yp-10 w80 -Theme 0x8000 gClearM, ClearMem
@@ -183,8 +183,8 @@ return
 
 UpdateMemory:
 	GMSEx := GlobalMemoryStatusEx()
-    GMSEx1 := Round(GMSEx[1] / 1024**2, 2)
-    GMSEx2 := Round(GMSEx[2] / 1024**2, 2)
+    GMSEx1 := Round(GMSEx[2] / 1024**2, 2)
+    GMSEx2 := Round(GMSEx[3] / 1024**2, 2)
     GMSEx3 := Round(GMSEx1 - GMSEx2, 2)
     GuiControl,, RAM1, % GMSEx3 " MB"
     GMSEx3 := Round((GMSEx1 - GMSEx2) / GMSEx1 * 100, 2)
@@ -259,17 +259,27 @@ UpdateDrive:
 return
 
 UpdateMemHtop:
-    PUsage := Round(GetProcessMemoryInfo(ownPID) / 1024, 0)
+	GVEx := GetVersionEx()
+	if (GVEx[3] >= "7600")
+	{
+		GPMI := GetProcessMemoryInfo_PMCEX(ownPID)
+		PUsage := Round(GPMI[10] / 1024, 0)
+	}
+	else
+	{
+		GPMI := GetProcessMemoryInfo_PMC(ownPID)
+		PUsage := Round(GPMI[8] / 1024, 0)
+	}
     GuiControl,, OwnMem, % "PID: " ownPID " | " PUsage " K"
     SetTimer, UpdateMemHtop, 2000
 return
 
 ClearM:
 	GMSEx := GlobalMemoryStatusEx()
-    GMSEx_A := GMSEx[2] / 1024**2
+    GMSEx_A := GMSEx[3] / 1024**2
     ClearMemory()
     FreeMemory()
-    GMSEx_B := GMSEx[2] / 1024**2
+    GMSEx_B := GMSEx[3] / 1024**2
     LogLn(A_Hour ":" A_Min ":" A_Sec " | Cleared Memory: " Round(GMSEx_B - GMSEx_A, 2) " MB")
 return
 
@@ -332,47 +342,42 @@ DownloadToString(url, encoding="utf-8") {
     return o
 }
 
-; GetVersionEx ======================================================================
-GetVersionEx() {
-	static OSVerEX, init := VarSetCapacity(OSVerEX, 284, 0) && Numput(284, OSVerEX, "UInt")
-    DllCall(Kernel32.GetVersionEx, "Ptr", &OSVerEX)
-    return, NumGet(OSVerEX, 12, "UInt")
-}
-
 ; GlobalMemoryStatus ================================================================
 GlobalMemoryStatusEx() {
 	static MSEx, init := VarSetCapacity(MSEx, 64, 0) && NumPut(64, MSEx, "UInt")
     DllCall(Kernel32.GlobalMemoryStatusEx, "Ptr", &MSEx)
-    return, { 1 : NumGet(MSEx,  8, "Int64"), 2 : NumGet(MSEx, 16, "Int64") }
+    return, { 2 : NumGet(MSEx,  8, "Int64"), 3 : NumGet(MSEx, 16, "Int64") }
+}
+
+; GetVersionEx ======================================================================
+GetVersionEx() {
+    static OSVEREX, init := VarSetCapacity(OSVEREX, 284, 0) && Numput(284, OSVEREX, "UInt")
+    if (DllCall(Kernel32.GetVersionEx, "Ptr", &OSVEREX))
+        return, { 3 : NumGet(OSVEREX, 12, "UInt") }
 }
 
 ; GetProcessMemoryInfo ==============================================================
-GetProcessMemoryInfo(PID) {
+GetProcessMemoryInfo_PMCEX(PID) {
     pu := ""
-    if (GetVersionEx() >= "7600") {
-        size := (A_PtrSize = "8" ? "80" : "44")
-        VarSetCapacity(PMCEX, size, 0), NumPut(size, PMCEX)
-
-        hProcess := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "UInt", PID)
-        if (hProcess) {
-            if (DllCall(Kernel32.K32GetProcessMemoryInfo, "Ptr", hProcess, "UInt", &PMCEX, "UInt", size))
-                pu := NumGet(PMCEX, (A_PtrSize = "8" ? "72" : 40), (A_PtrSize = 8 ? "Int64" : "Int"))
-            DllCall(Kernel32.CloseHandle, "Int", hProcess)
-        }
+    hProcess := DllCall(Kernel32.OpenProcess, "UInt", 0x001F0FFF, "UInt", 0, "UInt", PID)
+    if (hProcess) {
+        static PMCEX, size := (A_PtrSize = "8" ? "80" : "44"), init := VarSetCapacity(PMCEX, size, 0) && NumPut(size, PMCEX)
+        if (DllCall(Kernel32.K32GetProcessMemoryInfo, "Ptr", hProcess, "UInt", &PMCEX, "UInt", size))
+            pu := { 10 : NumGet(PMCEX, (A_PtrSize = "8" ? "72" : "40"), "Ptr") }
+        DllCall(Kernel32.CloseHandle, "Ptr", hProcess)
     }
-    else
-    {
-        size := (A_PtrSize = "8" ? "72" : "40")
-        VarSetCapacity(PMC, size, 0), NumPut(size, PMC)
-        
-        hProcess := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "UInt", PID)
-        if (hProcess) {
-            if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "UInt", &PMC, "UInt", size))
-                pu := NumGet(PMC, (A_PtrSize = 8 ? 56 : 32), (A_PtrSize = 8 ? "Int64" : "Int"))
-            DllCall("psapi.dll\CloseHandle", "Ptr", hProcess)
-        }
+    return, % pu
+}
+GetProcessMemoryInfo_PMC(PID) {
+    pu := ""
+    hProcess := DllCall(Kernel32.OpenProcess, "UInt", 0x001F0FFF, "UInt", 0, "UInt", PID)
+    if (hProcess) {
+        static PMC, size := (A_PtrSize = "8" ? "72" : "40"), init := VarSetCapacity(PMC, size, 0) && NumPut(size, PMC)
+        if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "UInt", &PMC, "UInt", size))
+            pu := { 8 : NumGet(PMC, (A_PtrSize = "8" ? "56" : "32"), "Ptr") }
+        DllCall(Kernel32.CloseHandle, "Ptr", hProcess)
     }
-    return % pu
+    return, % pu
 }
 
 ; FormatSeconds =====================================================================
@@ -419,10 +424,10 @@ DecodeInteger(ptr) {
 ; ClearMemory =======================================================================
 ClearMemory() {
     for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process") {
-        handle := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "Int", process.ProcessID)
+        handle := DllCall(Kernel32.OpenProcess, "UInt", 0x001F0FFF, "UInt", 0, "UInt", process.ProcessID)
         DllCall("SetProcessWorkingSetSize", "UInt", handle, "Int", -1, "Int", -1)
         DllCall("psapi.dll\EmptyWorkingSet", "UInt", handle)
-        DllCall("CloseHandle", "UInt", handle)
+		DllCall(Kernel32.CloseHandle, "Ptr", handle)
     }
     return
 }
