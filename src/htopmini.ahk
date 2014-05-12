@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.6
-; Version .......: 2013.10.14-1518
+; Description ...: htopmini v0.6.2
+; Version .......: 2013.10.15-0820
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.14-1518
+;@Ahk2Exe-SetVersion 2013.10.15-0820
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -33,7 +33,6 @@ Menu, Tray, Add, Exit, Close
 Menu, Tray, Default, Show/Hide
 
 Gui +LastFound -Caption +ToolWindow
-GuiID := WinExist()
 Gui, Margin, 10, 10
 Gui, Color, 000000
 Gui, Font, cFFFFFF, Consolas
@@ -130,12 +129,11 @@ UpdateTime:
 return
 
 UpdateWeather:
-    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=693838&u=c")
-    RegExMatch(url, "city\=\""\w*", varCity)
-    StringTrimLeft, varCityA, varCity, 6
-    RegExMatch(url, "(\-)?\d{1,3}\sC", varTemp)
-    StringTrimRight, varTempA, varTemp, 2
-    GuiControl,, Temp01, % varCityA ", " varTempA " °C"
+    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=615702&u=c")
+    RegExMatch(url, "(?<=Weather for )(.*)(?=\<\/description\>\s\<language\>)", varCity)
+    RegExMatch(url, "(?<=temp="")(.*)(?=""  date)", varTemp)
+    RegExMatch(url, "(?<=temperature="")(.*)(?=""\s*distance)", varUnits)
+    GuiControl,, Temp01, % varCity " | " varTemp " °" varUnits
     SetTimer, UpdateWeather, 60000
 return
 
@@ -220,19 +218,19 @@ ClearL:
 return
 
 Transparency:
-    WinGet, ct, Transparent, ahk_id %GuiID%
-    WinSet, Transparent, % ct = "150" ? "Off" : "150" , htopmini
+    WinGet, ct, Transparent, htopmini
+    WinSet, Transparent, % ct = "150" ? "Off" : "150", htopmini
 return
 
 ShowHide:
     if WinExist("htopmini")
-        WinHide, ahk_id %GuiID%
+        WinHide, htopmini
     else
-        WinShow, ahk_id %GuiID%
-Return
+        WinShow, htopmini
+return
 
 OnTop:
-    WinSet, AlwaysOnTop, Toggle, ahk_id %GuiID%
+    WinSet, AlwaysOnTop, Toggle, htopmini
 return
 
 Close:
