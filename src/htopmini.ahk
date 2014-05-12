@@ -1,51 +1,61 @@
-﻿; VERSION MODIFED BY MasterFocus
-; http://www.auto-hotkey.com/boards/viewtopic.php?f=6&t=254&p=2487#p2487
-; (search this code for "[MF]" to find my modifications)
-; 16/october/2013 01:23h BRT (UTC-3)
-
-; ===================================================================================
-; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
+﻿; ===================================================================================
+; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.6.3
-; Version .......: 2013.10.15-1352
+; Description ...: htopmini v0.7.0
+; Version .......: 2013.10.17-2030
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.15-1352
+;@Ahk2Exe-SetVersion 2013.10.17-2030
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
-; GLOBAL SETTINGS ===================================================================
+
+; ###################################################################################
+; ### GLOBAL SETTINGS                                                             ###
+; ###################################################################################
 
 ;#Warn
 #NoEnv
 #SingleInstance Force
 global Kernel32 := LoadLibrary("Kernel32")
 global varPerc := 0
+global Weather_ID := "693838"       ; Yahoo Weather Location ID
+global Weather_DG := "c"            ; Celius = c | Fahrenheit = f
+global OSBuild := GetVersionEx()
+global mylogData := ""
+global ownPID := DllCall(Kernel32.GetCurrentProcessId)
 
-; SCRIPT ============================================================================
+
+; ###################################################################################
+; ### MENU                                                                        ###
+; ###################################################################################
 
 Menu, Tray, DeleteAll
 Menu, Tray, NoStandard
-Menu, Tray, Add, Toggle Percentage, TogPerc
+Menu, Tray, Add, Toggle Percentage, Menu_Percentage
 Menu, Tray, Add,
-Menu, Tray, Add, Toggle Transparency, Transparency
-Menu, Tray, Add, Toggle AlwaysOnTop, OnTop
-Menu, Tray, Add, Show/Hide, ShowHide
+Menu, Tray, Add, Toggle Transparency, Menu_Transparency
+Menu, Tray, Add, Toggle AlwaysOnTop, Menu_AlwaysOnTop
+Menu, Tray, Add, Show/Hide, Menu_ShowHide
 Menu, Tray, Add,
 Menu, Tray, Add, Exit, Close
 Menu, Tray, Default, Show/Hide
+Menu, Tray, ToggleCheck, Toggle Transparency
 
-Menu, Tray, ToggleCheck, Toggle Transparency ; [MF] Added for consistency
 
-Gui +LastFound -Caption +ToolWindow +E0x08000000 ; [MF] ExStyle added
+; ###################################################################################
+; ### GUI MAIN                                                                    ###
+; ###################################################################################
+
+Gui +LastFound -Caption +ToolWindow +hwndhMain
 Gui, Margin, 10, 10
 Gui, Color, 000000
 Gui, Font, cFFFFFF, Consolas
-Gui, Add, Text,     xm     ym w250 gMove vTime01
+Gui, Add, Text,     xm     ym w250 vTime01
 Gui, Add, Text,     xm+260 ym w170 0x202 vTemp01,
 Gui, Add, Text,     xm     y+2  w430 h1 0x7
 
@@ -128,29 +138,41 @@ Gui, Add, Progress, xm+130 yp+1 w170 h10 cFF0000 Range0-2000 -0x1 vOU2,
 Gui, Font, c00FF00,
 Gui, Add, Edit,     xm     y+7 0x0800 w430 r10 vMyLog
 Gui, Font, cFFFFFF,
-Gui, Add, Button,   xm+170 y+5 w80 -Theme 0x8000 gClearM, ClearMem
+Gui, Add, Text,     xm     y+15 w150 0x200 vOwnMem,
+Gui, Add, Button,   xm+170 yp-10 w80 -Theme 0x8000 gClearM, ClearMem
 Gui, Add, Button,   xm+260 yp w80 -Theme 0x8000 gClearL, ClearLog
 Gui, Add, Button,   xm+350 yp w80 -Theme 0x8000 gClose, Close
 Gui, Show, AutoSize, htopmini
 WinSet, Transparent, 150, htopmini
+
 SetTimer, UpdateTime, 1000
 SetTimer, UpdateWeather, -1000
 SetTimer, UpdateMemory, -1000
 SetTimer, UpdateTraffic, 1000
 SetTimer, UpdateDrive, -1000
+SetTimer, UpdateMemHtop, -1000
 ;SetTimer, ClearM, 60000
+
+OnMessage(0x201, "WM_LBUTTONDOWN")
+WM_LBUTTONDOWN(wParam, lParam, msg, hwnd)
+{
+    global hMain
+    if (hwnd = hMain)
+        PostMessage, 0xA1, 2,,, htopmini
+}
 return
 
-Move:
-    PostMessage, 0xA1, 2,,, htopmini ; [MF] Using 'hminitop' instead of 'A'
-return
+
+; ###################################################################################
+; ### SCRIPT                                                                      ###
+; ###################################################################################
 
 UpdateTime:
     GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(DllCall(Kernel32.GetTickCount64) / 1000)
 return
 
 UpdateWeather:
-    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=455825&u=c")
+    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=" Weather_ID "&u=" Weather_DG)
     RegExMatch(url, "(?<=Weather for )(.*)(?=\<\/description\>\s\<language\>)", varCity)
     RegExMatch(url, "(?<=temp="")(.*)(?=""  date)", varTemp)
     RegExMatch(url, "(?<=temperature="")(.*)(?=""\s*distance)", varUnits)
@@ -159,16 +181,16 @@ UpdateWeather:
 return
 
 UpdateMemory:
-    GlobMemStat2 := GlobalMemoryStatusEx(2) ; total memory in MB
-    GlobMemStat3 := GlobalMemoryStatusEx(3) ; free memory in MB
-    GlobMemStat1 := Round(GlobMemStat2 - GlobMemStat3, 2) ; used memory in MB
-    GuiControl,, RAM1, % GlobMemStat1 " MB"
-    GlobMemStat1 := Round((GlobMemStat2 - GlobMemStat3) / GlobMemStat2 * 100, 2) ; percentage of used memory
-    GuiControl,, RAM2, % GlobMemStat3 " MB"
-    GuiControl,, RAM3, % GlobMemStat2 " MB"
-    GuiControl, % (GlobMemStat1 <= "75") ? "+c00FF00" : (GlobMemStat1 <= "90") ? "+cFFA500" : "+cFF0000", RAM4
-    GuiControl,, RAM4, % GlobMemStat1
-    GuiControl,, RAM5, % (varPerc = "1") ? GlobMemStat1 " %" : ""
+    GMSEx1 := Round(GlobalMemoryStatusEx(1) / 1024**2, 2)
+    GMSEx2 := Round(GlobalMemoryStatusEx(2) / 1024**2, 2)
+    GMSEx3 := Round(GMSEx1 - GMSEx2, 2)
+    GuiControl,, RAM1, % GMSEx3 " MB"
+    GMSEx3 := Round((GMSEx1 - GMSEx2) / GMSEx1 * 100, 2)
+    GuiControl,, RAM2, % GMSEx2 " MB"
+    GuiControl,, RAM3, % GMSEx1 " MB"
+    GuiControl, % (GMSEx3 <= "75") ? "+c00FF00" : (GMSEx3 <= "90") ? "+cFFA500" : "+cFF0000", RAM4
+    GuiControl,, RAM4, % GMSEx3
+    GuiControl,, RAM5, % (varPerc = "1") ? GMSEx3 " %" : ""
     SetTimer, UpdateMemory, 2000
 return
 
@@ -234,32 +256,43 @@ UpdateDrive:
     SetTimer, UpdateDrive, 5000
 return
 
+UpdateMemHtop:
+    PUsage := Round(GetProcessMemoryInfo(ownPID) / 1024, 0)
+    GuiControl,, OwnMem, % "PID: " ownPID " | " PUsage " K"
+    SetTimer, UpdateMemHtop, 2000
+return
+
 ClearM:
-    MemA := GlobalMemoryStatusEx(3)
+    GMSEx_A := GlobalMemoryStatusEx(2) / 1024**2
     ClearMemory()
     FreeMemory()
-    MemB := GlobalMemoryStatusEx(3)
-    LogLn(A_Hour ":" A_Min ":" A_Sec " | Cleared Memory: " Round(MemB - MemA, 2) " MB")
+    GMSEx_B := GlobalMemoryStatusEx(2) / 1024**2
+    LogLn(A_Hour ":" A_Min ":" A_Sec " | Cleared Memory: " Round(GMSEx_B - GMSEx_A, 2) " MB")
 return
 
 ClearL:
     LogClear()
 return
 
-TogPerc:
+Menu_Percentage:
     varPerc := (varPerc = "0") ? "1" : "0"
-    Menu, Tray, ToggleCheck, Toggle Percentage ; [MF]
+    Menu, Tray, ToggleCheck, Toggle Percentage
 return
 
-Transparency:
+Menu_Transparency:
     WinGet, ct, Transparent, htopmini
     WinSet, Transparent, % ct = "150" ? "Off" : "150", htopmini
-    Menu, Tray, ToggleCheck, Toggle Transparency ; [MF]
+    Menu, Tray, ToggleCheck, Toggle Transparency
 return
 
-ShowHide:
+Menu_AlwaysOnTop:
+    WinSet, AlwaysOnTop, Toggle, htopmini
+    Menu, Tray, ToggleCheck, Toggle AlwaysOnTop
+return
+
+Menu_ShowHide:
     WinGet, winStyle, Style, htopmini
-    If (winStyle & 0x10000000)
+    if (winStyle & 0x10000000)
         WinHide, htopmini
     else
     {
@@ -269,24 +302,18 @@ ShowHide:
     }
 return
 
-
-OnTop:
-    WinSet, AlwaysOnTop, Toggle, htopmini
-    Menu, Tray, ToggleCheck, Toggle AlwaysOnTop ; [MF]
-return
-
 Close:
     ExitApp
 return
 
-; [MF] Stuff I don't use, commented out
-/*
 +WheelUp::   AdjustBrightness(+1)
 +XButton2::  DisplaySetBrightness(128)
 +WheelDown:: AdjustBrightness(-1)
-*/
 
-; FUNCTIONS =========================================================================
+
+; ###################################################################################
+; ### FUNCTIONS                                                                   ###
+; ###################################################################################
 
 ; DownloadToString ==================================================================
 DownloadToString(url, encoding="utf-8")
@@ -309,32 +336,38 @@ DownloadToString(url, encoding="utf-8")
     return o
 }
 
-; GlobalMemoryStatus ================================================================
-GlobalMemoryStatusEx(GMS = 1) {
-    VarSetCapacity(MEMORYSTATUSEX, 64, 0)
-    NumPut(64, MEMORYSTATUSEX)
-    DllCall(Kernel32.GlobalMemoryStatusEx, "ptr", &MEMORYSTATUSEX)
-    return, % (GMS = "0") ? NumGet(MEMORYSTATUSEX, 0, "Int")
-            : (GMS = "1") ? NumGet(MEMORYSTATUSEX, 4, "Int")
-            : (GMS = "2") ? Round((NumGet(MEMORYSTATUSEX,  8, "Int64") / 1024**2), 2)
-            : (GMS = "3") ? Round((NumGet(MEMORYSTATUSEX, 16, "Int64") / 1024**2), 2)
-            : (GMS = "4") ? Round((NumGet(MEMORYSTATUSEX, 24, "Int64") / 1024**2), 2)
-            : (GMS = "5") ? Round((NumGet(MEMORYSTATUSEX, 32, "Int64") / 1024**2), 2)
-            : (GMS = "6") ? Round((NumGet(MEMORYSTATUSEX, 40, "Int64") / 1024**2), 2)
-            : (GMS = "7") ? Round((NumGet(MEMORYSTATUSEX, 48, "Int64") / 1024**2), 2)
-            : (GMS = "8") ? NumGet(MEMORYSTATUSEX, 56, "Int")
-            : "FAIL"
+; GetVersionEx ======================================================================
+GetVersionEx() {
+    VarSetCapacity(OSVerEX, 284, 0), Numput(284, OSVerEX)
+    DllCall("GetVersionEx", "Ptr", &OSVerEX)
+    return, NumGet(OSVerEX, 12, "UInt")
 }
 
-; GetDrive ==========================================================================
-GetDriveType(driveLetter) {
-    return, % DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "0" ? "UNKNWON"
-            : DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "1" ? "NO_ROOT_DIR"
-            : DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "2" ? "REMOVABLE"
-            : DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "3" ? "FIXED"
-            : DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "4" ? "REMOTE"
-            : DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "5" ? "CDROM"
-            : DllCall(Kernel32.GetDriveType, "Str", driveLetter) = "6" ? "RAMDISK"
+; GlobalMemoryStatus ================================================================
+GlobalMemoryStatusEx(GMS = 1) {
+    VarSetCapacity(MEMORYSTATUSEX, 64, 0), NumPut(64, MEMORYSTATUSEX)
+    DllCall(Kernel32.GlobalMemoryStatusEx, "Ptr", &MEMORYSTATUSEX)
+    return, % (GMS = "1") ? NumGet(MEMORYSTATUSEX,  8, "Int64") : (GMS = "2") ? NumGet(MEMORYSTATUSEX, 16, "Int64") : "FAIL"
+}
+
+; GetProcessMemoryInfo ==============================================================
+GetProcessMemoryInfo(PID) {
+    size := (A_PtrSize = 8 ? 80 : 44)
+    VarSetCapacity(PMCEX, size, 0), NumPut(size, PMCEX)
+    pu := ""
+
+    hProcess := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "UInt", PID)
+    if (hProcess) {
+        if (OSBuild >= "7600") {
+            if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "UInt", &PMCEX, "UInt", size)) {
+                pu := NumGet(PMCEX, (A_PtrSize = 8 ? 72 : 40), "Int64")
+            }
+        else
+            pu := "old OS"
+        }
+        DllCall("CloseHandle", "UInt", hProcess)
+    }
+    return % pu
 }
 
 ; FormatSeconds =====================================================================
@@ -347,14 +380,7 @@ FormatSeconds(NumberOfSeconds, TimeFormat = "") {
     return Output1
 }
 
-; CalcBytes =========================================================================
-CalcBytes(kb, decimal = 2)
-{ 
-    return, (kb > 1048575) ? Round((kb / 1048576), decimal) " GB" : ((kb > 1023) ? Round((kb / 1024), decimal) " MB" : kb " KB")
-}
-
 ; LogLn =============================================================================
-global mylogData := ""
 LogLn(line) {
     global
     mylogData .= line "`n"
@@ -391,7 +417,7 @@ ClearMemory() {
         handle := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "Int", process.ProcessID)
         DllCall("SetProcessWorkingSetSize", "UInt", handle, "Int", -1, "Int", -1)
         DllCall("psapi.dll\EmptyWorkingSet", "UInt", handle)
-        DllCall("CloseHandle", "Int", handle)
+        DllCall("CloseHandle", "UInt", handle)
     }
     return
 }
@@ -445,8 +471,11 @@ FreeLibrary(lib) {
         DllCall("FreeLibrary", "ptr", lib._ptr)
 }
 
-; EXIT ==============================================================================
- 
+
+; ###################################################################################
+; ### EXIT                                                                        ###
+; ###################################################################################
+
 GuiClose:
 GuiEscape:
     ExitApp
