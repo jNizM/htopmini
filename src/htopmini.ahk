@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.7.6
-; Version .......: 2013.10.18-1208
+; Description ...: htopmini v0.8.0
+; Version .......: 2013.11.05-1240
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.18-1208
+;@Ahk2Exe-SetVersion 2013.11.05-1240
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -21,14 +21,15 @@
 ;#Warn
 #NoEnv
 #SingleInstance Force
-global Kernel32 := LoadLibrary("Kernel32")
-global WinTitel := "htopmini " A_Now
-global OldFormat := A_FormatInteger
-global varPerc := 0
-global Weather_ID := "693838"                            ; Yahoo Weather Location ID
-global Weather_DG := "c"                                 ; Celius = c | Fahrenheit = f
-global ownPID := DllCall(Kernel32.GetCurrentProcessId)
-global BuildVersion := DllCall(Kernel32.GetVersion) >> 16 & 0xffff
+global Kernel32     := LoadLibrary("Kernel32")
+global WinTitel     := "htopmini " A_Now
+global Today        := A_DD "." A_MM "." A_YYYY
+global OldFormat    := A_FormatInteger
+global varPerc      := 0
+global Weather_ID   := "693838"                                      ; Yahoo Weather Location ID
+global Weather_DG   := "c"                                           ; Celius = c | Fahrenheit = f
+global ownPID       := DllCall(Kernel32.GetCurrentProcessId)         ; Get Process ID of this tool
+global BuildVersion := DllCall(Kernel32.GetVersion) >> 16 & 0xffff   ; Get Windows Build Version
 
 
 ; ###################################################################################
@@ -64,19 +65,29 @@ Gui, Font, cFFFFFF,
 Gui, Add, Text,     xm     y+4 w30 0x200, CPU:
 Gui, Font, c00FF00,
 Gui, Add, Text,     xm+40  yp w80 0x202 vCPU1,
-Gui, Add, Progress, xm+130 yp+1 w170 h10 BackgroundF0F0F0 vCPU2,
+Gui, Add, Text,     xm+140 yp   w80 0x202 vCPU2,
+Gui, Add, Progress, xm+250 yp+1 w180 h10 BackgroundF0F0F0 vCPU3,
 Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
 Gui, Font, cFFFFFF,
-Gui, Add, Text,     xm     y+3 w30 0x200, RAM:
+Gui, Add, Text,     xm     y+3 w30 0x200, Mem:
 Gui, Font, c00FF00,
-Gui, Add, Text,     xm+40  yp   w80 0x202 vRAM1,
-Gui, Add, Text,     xm+130 yp   w80 0x202 vRAM2,
+Gui, Add, Text,     xm+40  yp   w80 0x202 vMEM01,
 Gui, Font, cFFFFFF,
-Gui, Add, Text,     xm+220 yp   w80 0x202 vRAM3,
-Gui, Add, Progress, xm+310 yp+1 h10 BackgroundF0F0F0 vRAM4,
+Gui, Add, Text,     xm+140 yp   w80 0x202 vMEM02,
+Gui, Add, Progress, xm+250 yp+1 w180 h10 BackgroundF0F0F0 vMEM03,
 Gui, Font, c000000 s7,
-Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vRAM5,
+Gui, Add, Text,     xm+250 yp w180 h11 0x202 +BackgroundTrans vMEM04,
+
+Gui, Font, cFFFFFF s8,
+Gui, Add, Text,     xm     y+3 w30 0x200, Swp:
+Gui, Font, c00FF00,
+Gui, Add, Text,     xm+40  yp   w80 0x202 vSWP01,
+Gui, Font, cFFFFFF,
+Gui, Add, Text,     xm+140 yp   w80 0x202 vSWP02,
+Gui, Add, Progress, xm+250 yp+1 w180 h10 BackgroundF0F0F0 vSWP03,
+Gui, Font, c000000 s7,
+Gui, Add, Text,     xm+250 yp w180 h11 0x202 +BackgroundTrans vSWP04,
 Gui, Font, cFFFFFF s8,
 Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
@@ -87,12 +98,11 @@ loop, Parse, DrvLstFxd
     Gui, Add, Text,     xm     y+1 w30 0x200, F_%A_Loopfield%:\
     Gui, Font, c00FF00,
     Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
-    Gui, Add, Text,     xm+130 yp w80 0x202 vD%A_Loopfield%2,
     Gui, Font, cFFFFFF,
-    Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
-    Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+    Gui, Add, Text,     xm+140 yp w80 0x202 vD%A_Loopfield%2,
+    Gui, Add, Progress, xm+250 yp+1 w180 h10 vD%A_Loopfield%3,
     Gui, Font, c000000 s7,
-    Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vD%A_Loopfield%5,
+    Gui, Add, Text,     xm+250 yp w180 h11 0x202 +BackgroundTrans vD%A_Loopfield%4,
     Gui, Font, cFFFFFF s8,
 }
 DriveGet, DrvLstRmvbl, List, REMOVABLE
@@ -102,12 +112,11 @@ loop, Parse, DrvLstRmvbl
     Gui, Add, Text,     xm     y+1 w30 0x200, R_%A_Loopfield%:\
     Gui, Font, c00FF00,
     Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
-    Gui, Add, Text,     xm+130 yp w80 0x202 vD%A_Loopfield%2,
     Gui, Font, cFFFFFF,
-    Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
-    Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+    Gui, Add, Text,     xm+140 yp w80 0x202 vD%A_Loopfield%2,
+    Gui, Add, Progress, xm+250 yp+1 w180 h10 vD%A_Loopfield%3,
     Gui, Font, c000000 s7,
-    Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vD%A_Loopfield%5,
+    Gui, Add, Text,     xm+250 yp w180 h11 0x202 +BackgroundTrans vD%A_Loopfield%4,
     Gui, Font, cFFFFFF s8,
 }
 DriveGet, DrvLstNtwrk, List, NETWORK
@@ -117,27 +126,21 @@ loop, Parse, DrvLstNtwrk
     Gui, Add, Text,     xm     y+1 w30 0x200, N_%A_Loopfield%:\
     Gui, Font, c00FF00,
     Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
-    Gui, Add, Text,     xm+130 yp w80 0x202 vD%A_Loopfield%2,
     Gui, Font, cFFFFFF,
-    Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
-    Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+    Gui, Add, Text,     xm+140 yp w80 0x202 vD%A_Loopfield%2,
+    Gui, Add, Progress, xm+250 yp+1 w180 h10 vD%A_Loopfield%3,
     Gui, Font, c000000 s7,
-    Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vD%A_Loopfield%5,
+    Gui, Add, Text,     xm+250 yp w180 h11 0x202 +BackgroundTrans vD%A_Loopfield%4,
     Gui, Font, cFFFFFF s8,
 }
 Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
 Gui, Font, cFFFFFF,
-Gui, Add, Text,     xm     y+1  w30 0x200, IN:
+Gui, Add, Text,     xm     y+1  w30 0x200, IN\OUT:
 Gui, Font, c00FF00,
 Gui, Add, Text,     xm+40  yp   w80 0x202 vIN1,
-Gui, Add, Progress, xm+130 yp+1 w170 h10 c00FF00 Range0-32000 -0x1 vIN2,
-
-Gui, Font, cFFFFFF,
-Gui, Add, Text,     xm     y+1  w30 0x200, OUT:
 Gui, Font, cFF0000,
-Gui, Add, Text,     xm+40  yp   w80 0x202 vOU1,
-Gui, Add, Progress, xm+130 yp+1 w170 h10 cFF0000 Range0-2000 -0x1 vOU2,
+Gui, Add, Text,     xm+140 yp   w80 0x202 vOU1,
 Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
 Gui, Font, cFFFFFF,
@@ -171,7 +174,7 @@ return
 ; ###################################################################################
 
 UpdateTime:
-    GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(((A_Is64bitOS = "1") ? DllCall(Kernel32.GetTickCount64) : DllCall(Kernel32.GetTickCount)) / 1000)
+    GuiControl,, Time01, % Today "  " A_Hour ":" A_Min ":" A_Sec " | Up: " FormatSeconds(((A_Is64bitOS = "1") ? DllCall(Kernel32.GetTickCount64) : DllCall(Kernel32.GetTickCount)) / 1000)
 return
 
 UpdateWeather:
@@ -184,28 +187,83 @@ UpdateWeather:
 return
 
 UpdateCPULoad:
-	SetFormat, Float, 02
-	CPU := GetSystemTimes()
-	GuiControl,, CPU1, % CPU " % "
-	GuiControl, % (CPU <= "75") ? "+c00FF00" : (CPU <= "90") ? "+cFFA500" : "+cFF0000", CPU2
-	GuiControl,, CPU2, % CPU
-	SetFormat, Integer, %OldFormat%
-	SetTimer, UpdateCPULoad, 1000
+    GuiControl,, CPU1, % GetProcessCount() " proc"
+    SetFormat, Float, 02
+    CPU := GetSystemTimes()
+    GuiControl,, CPU2, % CPU " % "
+    GuiControl, % (CPU <= "50") ? "+c00FF00" : (CPU <= "80") ? "+cFFA500" : "+cFF0000", CPU3
+    GuiControl,, CPU3, % CPU
+    SetFormat, Integer, %OldFormat%
+    SetTimer, UpdateCPULoad, 1000
 return
 
 UpdateMemory:
     GMSEx := GlobalMemoryStatusEx()
-    GMSEx1 := Round(GMSEx[2] / 1024**2, 2)
-    GMSEx2 := Round(GMSEx[3] / 1024**2, 2)
-    GMSEx3 := Round(GMSEx1 - GMSEx2, 2)
-    GuiControl,, RAM1, % GMSEx3 " MB"
-    GMSEx3 := Round((GMSEx1 - GMSEx2) / GMSEx1 * 100, 2)
-    GuiControl,, RAM2, % GMSEx2 " MB"
-    GuiControl,, RAM3, % GMSEx1 " MB"
-    GuiControl, % (GMSEx3 <= "75") ? "+c00FF00" : (GMSEx3 <= "90") ? "+cFFA500" : "+cFF0000", RAM4
-    GuiControl,, RAM4, % GMSEx3
-    GuiControl,, RAM5, % (varPerc = "1") ? GMSEx3 " %" : ""
+    GMSExM01 := Round(GMSEx[2] / 1024**2, 2)               ; Total Physical Memory in MB
+    GMSExM02 := Round(GMSEx[3] / 1024**2, 2)               ; Available Physical Memory in MB
+    GMSExM03 := Round(GMSExM01 - GMSExM02, 2)              ; Used Physical Memory in MB
+    GMSExM04 := Round(GMSExM03 / GMSExM01 * 100, 2)        ; Used Physical Memory in %
+    GMSExS01 := Round(GMSEx[4] / 1024**2, 2)               ; Total PageFile in MB
+    GMSExS02 := Round(GMSEx[5] / 1024**2, 2)               ; Available PageFile in MB
+    GMSExS03 := Round(GMSExS01 - GMSExS02, 2)              ; Used PageFile in MB
+    GMSExS04 := Round(GMSExS03 / GMSExS01 * 100, 2)        ; Used PageFile in %
+    
+    GuiControl,, MEM01, % GMSExM03 " MB"
+    GuiControl,, MEM02, % GMSExM01 " MB"
+    GuiControl, % (GMSExM04 <= "75") ? "+c00FF00" : (GMSExM04 <= "90") ? "+cFFA500" : "+cFF0000", MEM03
+    GuiControl,, MEM03, % GMSExM04
+    GuiControl,, MEM04, % (varPerc = "1") ? GMSExM04 " % " : ""
+
+    GuiControl,, SWP01, % GMSExS03 " MB"
+    GuiControl,, SWP02, % GMSExS01 " MB"
+    GuiControl, % (GMSExS04 <= "75") ? "+c00FF00" : (GMSExS04 <= "90") ? "+cFFA500" : "+cFF0000", SWP03
+    GuiControl,, SWP03, % GMSExS04
+    GuiControl,, SWP04, % (varPerc = "1") ? GMSExS04 " % " : ""
+    
     SetTimer, UpdateMemory, 2000
+return
+
+UpdateDrive:
+    loop, Parse, DrvLstFxd
+    {
+        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
+        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
+        used%A_Loopfield% := cap%A_Loopfield% - free%A_Loopfield%
+        perc%A_Loopfield% := used%A_Loopfield% / cap%A_Loopfield% * 100
+        GuiControl,, D%A_Loopfield%1, % Round(used%A_Loopfield% / 1024, 2) " GB"
+        GuiControl,, D%A_Loopfield%2, % Round(cap%A_Loopfield% / 1024, 2) " GB"
+        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%3
+        GuiControl, % (perc%A_Loopfield% <= "80") ? "+c00FF00" : (perc%A_Loopfield% <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%3
+        GuiControl,, D%A_Loopfield%3, % used%A_Loopfield%
+        GuiControl,, D%A_Loopfield%4, % (varPerc = "1") ? Round(perc%A_Loopfield%, 2) " % " : ""
+    }
+    loop, Parse, DrvLstRmvbl
+    {
+        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
+        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
+        used%A_Loopfield% := cap%A_Loopfield% - free%A_Loopfield%
+        perc%A_Loopfield% := used%A_Loopfield% / cap%A_Loopfield% * 100
+        GuiControl,, D%A_Loopfield%1, % Round(used%A_Loopfield% / 1024, 2) " GB"
+        GuiControl,, D%A_Loopfield%2, % Round(cap%A_Loopfield% / 1024, 2) " GB"
+        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%3
+        GuiControl, % (perc%A_Loopfield% <= "80") ? "+c00FF00" : (perc%A_Loopfield% <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%3
+        GuiControl,, D%A_Loopfield%3, % used%A_Loopfield%
+        GuiControl,, D%A_Loopfield%4, % (varPerc = "1") ? Round(perc%A_Loopfield%, 2) " % " : ""
+    }
+    loop, Parse, DrvLstNtwrk
+    {
+        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
+        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
+        used%A_Loopfield% := cap%A_Loopfield% - free%A_Loopfield%
+        perc%A_Loopfield% := used%A_Loopfield% / cap%A_Loopfield% * 100
+        GuiControl,, D%A_Loopfield%1, % Round(used%A_Loopfield% / 1024, 2) " GB"
+        GuiControl,, D%A_Loopfield%2, % Round(cap%A_Loopfield% / 1024, 2) " GB"
+        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%3
+        GuiControl, % (perc%A_Loopfield% <= "80") ? "+c00FF00" : (perc%A_Loopfield% <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%3
+        GuiControl,, D%A_Loopfield%3, % used%A_Loopfield%
+        GuiControl,, D%A_Loopfield%4, % (varPerc = "1") ? Round(perc%A_Loopfield%, 2) " % " : ""
+    }
+    SetTimer, UpdateDrive, 5000
 return
 
 UpdateTraffic:
@@ -220,67 +278,16 @@ UpdateTraffic:
     dnRate := Round((dnNew - dnOld) / 1024)
     upRate := Round((upNew - upOld) / 1024)
     GuiControl,, In1, % dnRate " kb/s"
-    GuiControl,, In2, % dnRate
     GuiControl,, Ou1, % upRate " kb/s"
-    GuiControl,, Ou2, % upRate
     dnOld := dnNew
     upOld := upNew
 return
 
-UpdateDrive:
-    loop, Parse, DrvLstFxd
-    {
-        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
-        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
-		used%A_Loopfield% := cap%A_Loopfield% - free%A_Loopfield%
-		perc%A_Loopfield% := used%A_Loopfield% / cap%A_Loopfield% * 100
-        GuiControl,, D%A_Loopfield%1, % Round(used%A_Loopfield% / 1024, 2) " GB"
-        GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
-        GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
-        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
-        GuiControl, % (perc%A_Loopfield% <= "80") ? "+c00FF00" : (perc%A_Loopfield% <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
-        GuiControl,, D%A_Loopfield%4, % used%A_Loopfield%
-        GuiControl,, D%A_Loopfield%5, % (varPerc = "1") ? Round(perc%A_Loopfield%, 2) " %" : ""
-    }
-    loop, Parse, DrvLstRmvbl
-    {
-        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
-        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
-		used%A_Loopfield% := cap%A_Loopfield% - free%A_Loopfield%
-		perc%A_Loopfield% := used%A_Loopfield% / cap%A_Loopfield% * 100
-        GuiControl,, D%A_Loopfield%1, % Round(used%A_Loopfield% / 1024, 2) " GB"
-        GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
-        GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
-        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
-        GuiControl, % (perc%A_Loopfield% <= "80") ? "+c00FF00" : (perc%A_Loopfield% <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
-        GuiControl,, D%A_Loopfield%4, % used%A_Loopfield%
-        GuiControl,, D%A_Loopfield%5, % (varPerc = "1") ? Round(perc%A_Loopfield%, 2) " %" : ""
-    }
-    loop, Parse, DrvLstNtwrk
-    {
-        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
-        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
-		used%A_Loopfield% := cap%A_Loopfield% - free%A_Loopfield%
-		perc%A_Loopfield% := used%A_Loopfield% / cap%A_Loopfield% * 100
-        GuiControl,, D%A_Loopfield%1, % Round(used%A_Loopfield% / 1024, 2) " GB"
-        GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
-        GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
-        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
-        GuiControl, % (perc%A_Loopfield% <= "80") ? "+c00FF00" : (perc%A_Loopfield% <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
-        GuiControl,, D%A_Loopfield%4, % used%A_Loopfield%
-        GuiControl,, D%A_Loopfield%5, % (varPerc = "1") ? Round(perc%A_Loopfield%, 2) " %" : ""
-    }
-    SetTimer, UpdateDrive, 5000
-return
-
 UpdateMemHtop:
-    if (BuildVersion >= "7600")
-    {
+    if (BuildVersion >= "7600") {
         GPMI := GetProcessMemoryInfo_PMCEX(ownPID)
         PUsage := Round(GPMI[10] / 1024, 0)
-    }
-    else
-    {
+    } else {
         GPMI := GetProcessMemoryInfo_PMC(ownPID)
         PUsage := Round(GPMI[8] / 1024, 0)
     }
@@ -289,8 +296,8 @@ UpdateMemHtop:
 return
 
 Clear:
-	ClearMemory()
-	FreeMemory()
+    ClearMemory()
+    FreeMemory()
 return
 
 Minimi:
@@ -348,20 +355,28 @@ DownloadToString(url, encoding="utf-8") {
     return o
 }
 
+; ProcessCount ======================================================================
+GetProcessCount() {
+    proc := ""
+    for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
+        proc++
+    return proc
+}
+
 ; GetSystemTimes ====================================================================
 GetSystemTimes() {
-   static oldIdleTime, oldKrnlTime, oldUserTime
+   static oldIdleTime, oldKernelTime, oldUserTime
    static lpIdleTime, lpKernelTime, lpUserTime
-   oldIdleTime := lpIdleTime, oldKrnlTime := lpKernelTime, oldUserTime := lpUserTime
+   oldIdleTime := lpIdleTime, oldKernelTime := lpKernelTime, oldUserTime := lpUserTime
    DllCall(Kernel32.GetSystemTimes, "int64P", lpIdleTime, "int64P", lpKernelTime, "int64P", lpUserTime)
-   return (1 - (lpIdleTime - oldIdleTime) / (lpKernelTime - oldKrnlTime + lpUserTime - oldUserTime)) * 100
+   return (1 - (lpIdleTime - oldIdleTime) / (lpKernelTime - oldKernelTime + lpUserTime - oldUserTime)) * 100
 }
 
 ; GlobalMemoryStatus ================================================================
 GlobalMemoryStatusEx() {
     static MSEx, init := VarSetCapacity(MSEx, 64, 0) && NumPut(64, MSEx, "UInt")
     DllCall(Kernel32.GlobalMemoryStatusEx, "Ptr", &MSEx)
-    return { 2 : NumGet(MSEx,  8, "Int64"), 3 : NumGet(MSEx, 16, "Int64") }
+    return { 2 : NumGet(MSEx,  8, "UInt64"), 3 : NumGet(MSEx, 16, "UInt64"), 4 : NumGet(MSEx, 24, "UInt64"), 5 : NumGet(MSEx, 32, "UInt64") }
 }
 
 ; GetProcessMemoryInfo ==============================================================
@@ -393,8 +408,10 @@ FormatSeconds(NumberOfSeconds) {
     Time = 19990101
     Time += %NumberOfSeconds%, Seconds
     FormatTime, Output1, %Time%, HH:mm:ss
-	FormatTime, Output2, %Time%, YDay
-    return Output2-1 "d:" Output1
+    FormatTime, Output2, %Time%, YDay
+    if (Output2 >= "2")
+        return Output2-1 "d:" Output1
+    return Output1
 }
 
 ; NetTraffic ========================================================================
@@ -422,7 +439,7 @@ ClearMemory() {
         handle := DllCall(Kernel32.OpenProcess, "UInt", 0x001F0FFF, "UInt", 0, "UInt", process.ProcessID)
         DllCall("SetProcessWorkingSetSize", "UInt", handle, "Int", -1, "Int", -1)
         DllCall("psapi.dll\EmptyWorkingSet", "UInt", handle)
-		DllCall(Kernel32.CloseHandle, "Ptr", handle)
+        DllCall(Kernel32.CloseHandle, "Ptr", handle)
     }
     return
 }
