@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.7.0
-; Version .......: 2013.10.17-2030
+; Description ...: htopmini v0.7.1
+; Version .......: 2013.10.18-1129
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.17-2030
+;@Ahk2Exe-SetVersion 2013.10.18-1129
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -22,9 +22,10 @@
 #NoEnv
 #SingleInstance Force
 global Kernel32 := LoadLibrary("Kernel32")
+global WinTitel := "htopmini " A_Now
 global varPerc := 0
-global Weather_ID := "693838"       ; Yahoo Weather Location ID
-global Weather_DG := "c"            ; Celius = c | Fahrenheit = f
+global Weather_ID := "693838"                      ; Yahoo Weather Location ID
+global Weather_DG := "c"                           ; Celius = c | Fahrenheit = f
 global OSBuild := GetVersionEx()
 global mylogData := ""
 global ownPID := DllCall(Kernel32.GetCurrentProcessId)
@@ -142,8 +143,8 @@ Gui, Add, Text,     xm     y+15 w150 0x200 vOwnMem,
 Gui, Add, Button,   xm+170 yp-10 w80 -Theme 0x8000 gClearM, ClearMem
 Gui, Add, Button,   xm+260 yp w80 -Theme 0x8000 gClearL, ClearLog
 Gui, Add, Button,   xm+350 yp w80 -Theme 0x8000 gClose, Close
-Gui, Show, AutoSize, htopmini
-WinSet, Transparent, 150, htopmini
+Gui, Show, AutoSize, %WinTitel%
+WinSet, Transparent, 150, %WinTitel%
 
 SetTimer, UpdateTime, 1000
 SetTimer, UpdateWeather, -1000
@@ -158,7 +159,7 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd)
 {
     global hMain
     if (hwnd = hMain)
-        PostMessage, 0xA1, 2,,, htopmini
+        PostMessage, 0xA1, 2,,, %WinTitel%
 }
 return
 
@@ -168,7 +169,7 @@ return
 ; ###################################################################################
 
 UpdateTime:
-    GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(DllCall(Kernel32.GetTickCount64) / 1000)
+    GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(((A_Is64bitOS = "1") ? DllCall(Kernel32.GetTickCount64) : DllCall(Kernel32.GetTickCount)) / 1000)
 return
 
 UpdateWeather:
@@ -280,30 +281,26 @@ Menu_Percentage:
 return
 
 Menu_Transparency:
-    WinGet, ct, Transparent, htopmini
-    WinSet, Transparent, % ct = "150" ? "Off" : "150", htopmini
+    WinGet, ct, Transparent, %WinTitel%
+    WinSet, Transparent, % ct = "150" ? "Off" : "150", %WinTitel%
     Menu, Tray, ToggleCheck, Toggle Transparency
 return
 
 Menu_AlwaysOnTop:
-    WinSet, AlwaysOnTop, Toggle, htopmini
+    WinSet, AlwaysOnTop, Toggle, %WinTitel%
     Menu, Tray, ToggleCheck, Toggle AlwaysOnTop
 return
 
 Menu_ShowHide:
-    WinGet, winStyle, Style, htopmini
+    WinGet, winStyle, Style, %WinTitel%
     if (winStyle & 0x10000000)
-        WinHide, htopmini
+        WinHide, %WinTitel%
     else
     {
-        WinShow, htopmini
-        WinSet, AlwaysOnTop, Toggle, htopmini
-        WinSet, AlwaysOnTop, Toggle, htopmini
+        WinShow, %WinTitel%
+        WinSet, AlwaysOnTop, Toggle, %WinTitel%
+        WinSet, AlwaysOnTop, Toggle, %WinTitel%
     }
-return
-
-Close:
-    ExitApp
 return
 
 +WheelUp::   AdjustBrightness(+1)
@@ -316,16 +313,13 @@ return
 ; ###################################################################################
 
 ; DownloadToString ==================================================================
-DownloadToString(url, encoding="utf-8")
-{
+DownloadToString(url, encoding="utf-8") {
     static a := "AutoHotkey/" A_AhkVersion
     if (!DllCall("LoadLibrary", "str", "wininet") || !(h := DllCall("wininet\InternetOpen", "str", a, "uint", 1, "ptr", 0, "ptr", 0, "uint", 0, "ptr")))
         return 0
     c := s := 0, o := ""
-    if (f := DllCall("wininet\InternetOpenUrl", "ptr", h, "str", url, "ptr", 0, "uint", 0, "uint", 0x80003000, "ptr", 0, "ptr"))
-    {
-        while (DllCall("wininet\InternetQueryDataAvailable", "ptr", f, "uint*", s, "uint", 0, "ptr", 0) && s > 0)
-        {
+    if (f := DllCall("wininet\InternetOpenUrl", "ptr", h, "str", url, "ptr", 0, "uint", 0, "uint", 0x80003000, "ptr", 0, "ptr")) {
+        while (DllCall("wininet\InternetQueryDataAvailable", "ptr", f, "uint*", s, "uint", 0, "ptr", 0) && s > 0) {
             VarSetCapacity(b, s, 0)
             DllCall("wininet\InternetReadFile", "ptr", f, "ptr", &b, "uint", s, "uint*", r)
             o .= StrGet(&b, r >> (encoding = "utf-16" || encoding = "cp1200"), encoding)
@@ -352,20 +346,29 @@ GlobalMemoryStatusEx(GMS = 1) {
 
 ; GetProcessMemoryInfo ==============================================================
 GetProcessMemoryInfo(PID) {
-    size := (A_PtrSize = 8 ? 80 : 44)
-    VarSetCapacity(PMCEX, size, 0), NumPut(size, PMCEX)
     pu := ""
+    if (GetVersionEx() >= "7600") {
+        size := (A_PtrSize = "8" ? "80" : "44")
+        VarSetCapacity(PMCEX, size, 0), NumPut(size, PMCEX)
 
-    hProcess := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "UInt", PID)
-    if (hProcess) {
-        if (OSBuild >= "7600") {
-            if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "UInt", &PMCEX, "UInt", size)) {
-                pu := NumGet(PMCEX, (A_PtrSize = 8 ? 72 : 40), "Int64")
-            }
-        else
-            pu := "old OS"
+        hProcess := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "UInt", PID)
+        if (hProcess) {
+            if (DllCall(Kernel32.K32GetProcessMemoryInfo, "Ptr", hProcess, "UInt", &PMCEX, "UInt", size))
+                pu := NumGet(PMCEX, (A_PtrSize = "8" ? "72" : 40), (A_PtrSize = 8 ? "Int64" : "Int"))
+            DllCall(Kernel32.CloseHandle, "Int", hProcess)
         }
-        DllCall("CloseHandle", "UInt", hProcess)
+    }
+    else
+    {
+        size := (A_PtrSize = "8" ? "72" : "40")
+        VarSetCapacity(PMC, size, 0), NumPut(size, PMC)
+        
+        hProcess := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "UInt", PID)
+        if (hProcess) {
+            if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "UInt", &PMC, "UInt", size))
+                pu := NumGet(PMC, (A_PtrSize = 8 ? 56 : 32), (A_PtrSize = 8 ? "Int64" : "Int"))
+            DllCall("psapi.dll\CloseHandle", "Ptr", hProcess)
+        }
     }
     return % pu
 }
@@ -476,6 +479,7 @@ FreeLibrary(lib) {
 ; ### EXIT                                                                        ###
 ; ###################################################################################
 
+Close:
 GuiClose:
 GuiEscape:
     ExitApp

@@ -3,10 +3,12 @@ Small System-Info Tool via AutoHotkey
 
   
 ## Features
+* Time: Time & Uptime
 * Weather: Location & Temperature
-* Memory: RAM (Used, Free, Total)
-* HDD: Fixed, Removable & Network Drives (Used, Free, Total)
+* Memory: RAM (Used, Free, Total & ProgressBar)
+* HDD: Fixed, Removable & Network Drives (Used, Free, Total & ProgressBar)
 * NetTraffic: IN & OUT (dont work 100%)
+* Usage: PID & PrivatUsage Memory
 * Clear Memory
 
 
@@ -15,11 +17,12 @@ Small System-Info Tool via AutoHotkey
 
 
 ## Info
-* Version: v0.7.0
+* Version: v0.7.1
 * URL: [AHK Thread](http://ahkscript.org/boards/viewtopic.php?f=6&t=254)
 
 
 ## Changelog
+* 0.7.1 | Fix GetProcessMemoryInfo
 * 0.7.0 | Bugfixes, PID & PrivateUsage
 * 0.6.4 | Bugfixes
 * 0.6.3 | Toggle Percentage in Progressbar
