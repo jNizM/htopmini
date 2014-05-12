@@ -16,11 +16,11 @@ Small System-Info Tool via AutoHotkey
 * Toggle WinShow / WinHide
 
 ### Weather
-http://weather.yahooapis.com/forecastrss?w=LOCATIONID&u=UNITS
-1. visit http://weather.yahoo.com/ and enter your city or zip code (e.g. Paris, FR)
-2. new link => http://weather.yahoo.com/france/%C3%AEle-de-france/paris-615702/ (location id = 615702)
-3. add ?w=615702&u=c for Paris and Celsium (f = fahrenheit)
-=> http://weather.yahooapis.com/forecastrss?w=615702&u=c
+* http://weather.yahooapis.com/forecastrss?w=LOCATIONID&u=UNITS
+* 1. visit http://weather.yahoo.com/ and enter your city or zip code (e.g. Paris, FR)
+* 2. new link => http://weather.yahoo.com/france/%C3%AEle-de-france/paris-615702/ (location id = 615702)
+* 3. add ?w=615702&u=c for Paris and Celsium (f = fahrenheit)
+* => http://weather.yahooapis.com/forecastrss?w=615702&u=c
 
 
 ## Screenshot
