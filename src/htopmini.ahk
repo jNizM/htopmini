@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.6.2
-; Version .......: 2013.10.15-0820
+; Description ...: htopmini v0.6.3
+; Version .......: 2013.10.15-1352
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.15-0820
+;@Ahk2Exe-SetVersion 2013.10.15-1352
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -19,14 +19,16 @@
 #NoEnv
 #SingleInstance Force
 global Kernel32 := LoadLibrary("Kernel32")
+global varPerc := 0
 
 ; SCRIPT ============================================================================
 
 Menu, Tray, DeleteAll
 Menu, Tray, NoStandard
-Menu, Tray, Add, Toggle Trans, Transparency
+Menu, Tray, Add, Toggle Percentage, TogPerc
 Menu, Tray, Add,
-Menu, Tray, Add, Toggle on Top, OnTop
+Menu, Tray, Add, Toggle Transparency, Transparency
+Menu, Tray, Add, Toggle AlwaysOnTop, OnTop
 Menu, Tray, Add, Show/Hide, ShowHide
 Menu, Tray, Add,
 Menu, Tray, Add, Exit, Close
@@ -51,8 +53,11 @@ Gui, Add, Text,     xm+40  yp   w80 0x202 vRAM1,
 Gui, Add, Text,     xm+130 yp   w80 0x202 vRAM2,
 Gui, Font, cFFFFFF,
 Gui, Add, Text,     xm+220 yp   w80 0x202 vRAM3,
-Gui, Add, Progress, xm+310 yp+1 h10 vRAM4,
-Gui, Add, Text,     xm     y+2  w430 h1 0x7
+Gui, Add, Progress, xm+310 yp+1 h10 BackgroundF0F0F0 vRAM4,
+Gui, Font, c000000 s7,
+Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vRAM5,
+Gui, Font, cFFFFFF s8,
+Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
 DriveGet, DrvLstFxd, List, FIXED
 loop, Parse, DrvLstFxd
@@ -65,6 +70,9 @@ loop, Parse, DrvLstFxd
     Gui, Font, cFFFFFF,
     Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
     Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+    Gui, Font, c000000 s7,
+    Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vD%A_Loopfield%5,
+    Gui, Font, cFFFFFF s8,
 }
 DriveGet, DrvLstRmvbl, List, REMOVABLE
 loop, Parse, DrvLstRmvbl
@@ -77,6 +85,9 @@ loop, Parse, DrvLstRmvbl
     Gui, Font, cFFFFFF,
     Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
     Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+    Gui, Font, c000000 s7,
+    Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vD%A_Loopfield%5,
+    Gui, Font, cFFFFFF s8,
 }
 DriveGet, DrvLstNtwrk, List, NETWORK
 loop, Parse, DrvLstNtwrk
@@ -89,8 +100,11 @@ loop, Parse, DrvLstNtwrk
     Gui, Font, cFFFFFF,
     Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
     Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+    Gui, Font, c000000 s7,
+    Gui, Add, Text,     xm+310 yp w120 h11 0x201 +BackgroundTrans vD%A_Loopfield%5,
+    Gui, Font, cFFFFFF s8,
 }
-Gui, Add, Text,     xm     y+2  w430 h1 0x7
+Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
 Gui, Font, cFFFFFF,
 Gui, Add, Text,     xm     y+1  w30 0x200, IN:
@@ -129,7 +143,7 @@ UpdateTime:
 return
 
 UpdateWeather:
-    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=615702&u=c")
+    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=693838&u=c")
     RegExMatch(url, "(?<=Weather for )(.*)(?=\<\/description\>\s\<language\>)", varCity)
     RegExMatch(url, "(?<=temp="")(.*)(?=""  date)", varTemp)
     RegExMatch(url, "(?<=temperature="")(.*)(?=""\s*distance)", varUnits)
@@ -143,6 +157,7 @@ UpdateMemory:
     GuiControl,, RAM3, % GlobalMemoryStatusEx(2) " MB"
     GuiControl, % (GlobalMemoryStatusEx(1) <= "75") ? "+c00FF00" : (GlobalMemoryStatusEx(1) <= "90") ? "+cFFA500" : "+cFF0000", RAM4
     GuiControl,, RAM4, % GlobalMemoryStatusEx(1)
+    GuiControl,, RAM5, % (varPerc = "1") ? Round((GlobalMemoryStatusEx(2) - GlobalMemoryStatusEx(3)) / GlobalMemoryStatusEx(3) * 100, 2) " %" : ""
     SetTimer, UpdateMemory, 2000
 return
 
@@ -177,6 +192,7 @@ UpdateDrive:
         GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "80") ? "+c00FF00"
                     : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
+        GuiControl,, D%A_Loopfield%5, %  (varPerc = "1") ? Round((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100, 2) " %" : ""
     }
     loop, Parse, DrvLstRmvbl
     {
@@ -189,6 +205,7 @@ UpdateDrive:
         GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "80") ? "+c00FF00"
                     : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
+        GuiControl,, D%A_Loopfield%5, %  (varPerc = "1") ? Round((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100, 2) " %" : ""
     }
     loop, Parse, DrvLstNtwrk
     {
@@ -201,6 +218,7 @@ UpdateDrive:
         GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "80") ? "+c00FF00"
                     : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
+        GuiControl,, D%A_Loopfield%5, %  (varPerc = "1") ? Round((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100, 2) " %" : ""
     }
     SetTimer, UpdateDrive, 5000
 return
@@ -215,6 +233,10 @@ return
 
 ClearL:
     LogClear()
+return
+
+TogPerc:
+    varPerc := (varPerc = "0") ? "1" : "0"
 return
 
 Transparency:

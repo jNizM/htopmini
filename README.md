@@ -15,11 +15,12 @@ Small System-Info Tool via AutoHotkey
 
 
 ## Info
-* Version: v0.6.2
+* Version: v0.6.3
 * URL: [AHK Thread](http://ahkscript.org/boards/viewtopic.php?f=6&t=254)
 
 
 ## Changelog
+* 0.6.3 | Toggle Percentage in Progressbar
 * 0.6.2 | Fixes Weather, Drag & Move
 * 0.6.0 | Added Weather (Location & Temperature)
 * 0.5.1 | Colored Progess for Memory & HDD
