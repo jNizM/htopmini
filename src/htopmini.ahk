@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini
-; Version .......: 2013.10.12-2022
-; Author ........: 
+; Description ...: htopmini v0.4
+; Version .......: 2013.10.13-0043
+; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.12-2022
+;@Ahk2Exe-SetVersion 2013.10.13-0043
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -22,7 +22,14 @@ global Kernel32 := LoadLibrary("Kernel32")
 
 ; SCRIPT ============================================================================
 
+Menu, Tray, DeleteAll
+Menu, Tray, NoStandard
+Menu, Tray, Add, Toggle Trans, Transparency
+Menu, Tray, Add,
+Menu, Tray, Add, Toggle on Top, OnTop
 Menu, Tray, Add, Show/Hide, ShowHide
+Menu, Tray, Add,
+Menu, Tray, Add, Exit, Close
 Menu, Tray, Default, Show/Hide
 
 Gui +LastFound -Caption +ToolWindow
@@ -71,6 +78,18 @@ loop, Parse, DrvLstRmvbl
     Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
     Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
 }
+DriveGet, DrvLstNtwrk, List, NETWORK
+loop, Parse, DrvLstNtwrk
+{
+    Gui, Font, cFFFFFF,
+    Gui, Add, Text,     xm     y+1 w30 0x200, N_%A_Loopfield%:\
+    Gui, Font, c00FF00,
+    Gui, Add, Text,     xm+40  yp w80 0x202 vD%A_Loopfield%1,
+    Gui, Add, Text,     xm+130 yp w80 0x202 vD%A_Loopfield%2,
+    Gui, Font, cFFFFFF,
+    Gui, Add, Text,     xm+220 yp w80 0x202 vD%A_Loopfield%3,
+    Gui, Add, Progress, xm+310 yp+1 h10 vD%A_Loopfield%4,
+}
 Gui, Add, Text,     xm     y+2  w430 h1 0x7
 
 Gui, Font, cFFFFFF,
@@ -91,12 +110,12 @@ Gui, Font, cFFFFFF,
 Gui, Add, Button,   xm+170 y+5 w80 -Theme 0x8000 gClearM, ClearMem
 Gui, Add, Button,   xm+260 yp w80 -Theme 0x8000 gClearL, ClearLog
 Gui, Add, Button,   xm+350 yp w80 -Theme 0x8000 gClose, Close
-Gui, Show, AutoSize, htop
-WinSet, Transparent, 150, htop
+Gui, Show, AutoSize, htopmini
+WinSet, Transparent, 150, htopmini
 SetTimer, UpdateTime, 1000
 SetTimer, UpdateMemory, 2000
 SetTimer, UpdateTraffic, 2000
-SetTimer, UpdateDrive, 1000
+SetTimer, UpdateDrive, -1000
 SetTimer, ClearM, 60000
 return
 
@@ -143,7 +162,7 @@ UpdateDrive:
         GuiControl,, D%A_Loopfield%1, % Round((cap%A_Loopfield% - free%A_Loopfield%) / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
-        GuiControl, +Range0-%capC%%A_Loopfield%, D%A_Loopfield%4
+        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
         GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "75") ? "+c00FF00" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
@@ -154,10 +173,22 @@ UpdateDrive:
         GuiControl,, D%A_Loopfield%1, % Round((cap%A_Loopfield% - free%A_Loopfield%) / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
-        GuiControl, +Range0-%capC%%A_Loopfield%, D%A_Loopfield%4
+        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
         GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "75") ? "+c00FF00" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
+	loop, Parse, DrvLstNtwrk
+    {
+        DriveGet, cap%A_Loopfield%, Capacity, %A_Loopfield%:\
+        DriveSpaceFree, free%A_Loopfield%, %A_Loopfield%:\
+        GuiControl,, D%A_Loopfield%1, % Round((cap%A_Loopfield% - free%A_Loopfield%) / 1024, 2) " GB"
+        GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
+        GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
+        GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
+        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "75") ? "+c00FF00" : "+cFF0000", D%A_Loopfield%4
+        GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
+    }
+	SetTimer, UpdateDrive, 2000
 return
 
 ClearM:
@@ -172,14 +203,32 @@ ClearL:
     LogClear()
 return
 
+Transparency:
+	WinGet, curtrans, Transparent, ahk_id %GuiID%
+	if (curtrans = 150)
+		WinSet, Transparent, Off, htopmini
+	else
+		WinSet, Transparent, 150, htopmini
+return
+
 ShowHide:
-   IfWinExist, ahk_id %GuiID%,,,, WinHide, ahk_id %GuiID%
-   else                           WinShow, ahk_id %GuiID%
+    if WinExist("htopmini")
+        WinHide, ahk_id %GuiID%
+    else
+        WinShow, ahk_id %GuiID%
 Return
+
+OnTop:
+	WinSet, AlwaysOnTop, Toggle, ahk_id %GuiID%
+return
 
 Close:
     ExitApp
 return
+
++WheelUp::   AdjustBrightness(+1)
++XButton2::  DisplaySetBrightness(128)
++WheelDown:: AdjustBrightness(-1)
 
 ; FUNCTIONS =========================================================================
 
@@ -271,6 +320,25 @@ ClearMemory() {
 }
 FreeMemory() {
     return, DllCall("psapi.dll\EmptyWorkingSet", "UInt", -1)
+}
+
+; DisplayBrightness =================================================================
+AdjustBrightness(V = 0) {
+	V := (GetKeyState("XButton1") && V > 0) ? V + 9 : (GetKeyState("XButton1") && V < 0) ? V - 9 : V
+	SB := (SB := DisplayGetBrightness() + V) > 255 ? 255 : SB < 0 ? 0 : SB
+	DisplaySetBrightness(SB)
+}
+DisplaySetBrightness(SB = 128) {
+	loop, % VarSetCapacity(GB, 1536) / 6
+		NumPut((N := (SB + 128) * (A_Index - 1)) > 65535 ? 65535 : N, GB, 2 * (A_Index - 1), "UShort")
+	DllCall("RtlMoveMemory", UInt, &GB +  512, UInt, &GB, UInt, 512)
+	DllCall("RtlMoveMemory", UInt, &GB + 1024, UInt, &GB, UInt, 512)
+	return DllCall("SetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB), DllCall("ReleaseDC", UInt, 0, UInt, hDC)
+}
+DisplayGetBrightness(ByRef GB = "") {
+	VarSetCapacity(GB, 1536, 0)
+	DllCall("GetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB)
+	return NumGet(GB, 2, "UShort") - 128, DllCall("ReleaseDC", UInt, 0, UInt, hDC)
 }
 
 ; LoadLibrary =======================================================================

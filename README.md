@@ -14,11 +14,12 @@ Small System-Info Tool via AutoHotkey
 
 
 ## Info
-* Version: v0.3.0
+* Version: v0.5.0
 * URL: [AHK Thread](http://ahkscript.org/boards/viewtopic.php?f=6&t=254)
 
 
 ## Changelog
+* 0.5.0 | Network Drives, Tray-Menu, DisplayBrightness
 * 0.3.0 | First Release
 
 
