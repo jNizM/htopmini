@@ -17,11 +17,12 @@ Small System-Info Tool via AutoHotkey
 
 
 ## Info
-* Version: v0.8.0
+* Version: v0.8.1
 * URL: [AHK Thread](http://ahkscript.org/boards/viewtopic.php?f=6&t=254)
 
 
 ## Changelog
+* 0.8.1 | Bugfixes & Improvements
 * 0.8.0 | Clear Memory, Add SWP, Bugfixes
 * 0.7.6 | Add CPU Load, Bugfixes
 * 0.7.5 | Update with days
