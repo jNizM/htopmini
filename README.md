@@ -17,11 +17,12 @@ Small System-Info Tool via AutoHotkey
 
 
 ## Info
-* Version: v0.7.1
+* Version: v0.7.2
 * URL: [AHK Thread](http://ahkscript.org/boards/viewtopic.php?f=6&t=254)
 
 
 ## Changelog
+* 0.7.2 | Fix GlobalMemoryStatusEx()
 * 0.7.1 | Fix GetProcessMemoryInfo
 * 0.7.0 | Bugfixes, PID & PrivateUsage
 * 0.6.4 | Bugfixes

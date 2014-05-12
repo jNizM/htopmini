@@ -1,7 +1,7 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.7.1
+; Description ...: htopmini v0.7.2
 ; Version .......: 2013.10.18-1129
 ; Author ........: jNizM
 ; License .......: WTFPL
@@ -182,8 +182,9 @@ UpdateWeather:
 return
 
 UpdateMemory:
-    GMSEx1 := Round(GlobalMemoryStatusEx(1) / 1024**2, 2)
-    GMSEx2 := Round(GlobalMemoryStatusEx(2) / 1024**2, 2)
+	GMSEx := GlobalMemoryStatusEx()
+    GMSEx1 := Round(GMSEx[1] / 1024**2, 2)
+    GMSEx2 := Round(GMSEx[2] / 1024**2, 2)
     GMSEx3 := Round(GMSEx1 - GMSEx2, 2)
     GuiControl,, RAM1, % GMSEx3 " MB"
     GMSEx3 := Round((GMSEx1 - GMSEx2) / GMSEx1 * 100, 2)
@@ -264,10 +265,11 @@ UpdateMemHtop:
 return
 
 ClearM:
-    GMSEx_A := GlobalMemoryStatusEx(2) / 1024**2
+	GMSEx := GlobalMemoryStatusEx()
+    GMSEx_A := GMSEx[2] / 1024**2
     ClearMemory()
     FreeMemory()
-    GMSEx_B := GlobalMemoryStatusEx(2) / 1024**2
+    GMSEx_B := GMSEx[2] / 1024**2
     LogLn(A_Hour ":" A_Min ":" A_Sec " | Cleared Memory: " Round(GMSEx_B - GMSEx_A, 2) " MB")
 return
 
@@ -332,16 +334,16 @@ DownloadToString(url, encoding="utf-8") {
 
 ; GetVersionEx ======================================================================
 GetVersionEx() {
-    VarSetCapacity(OSVerEX, 284, 0), Numput(284, OSVerEX)
-    DllCall("GetVersionEx", "Ptr", &OSVerEX)
+	static OSVerEX, init := VarSetCapacity(OSVerEX, 284, 0) && Numput(284, OSVerEX, "UInt")
+    DllCall(Kernel32.GetVersionEx, "Ptr", &OSVerEX)
     return, NumGet(OSVerEX, 12, "UInt")
 }
 
 ; GlobalMemoryStatus ================================================================
-GlobalMemoryStatusEx(GMS = 1) {
-    VarSetCapacity(MEMORYSTATUSEX, 64, 0), NumPut(64, MEMORYSTATUSEX)
-    DllCall(Kernel32.GlobalMemoryStatusEx, "Ptr", &MEMORYSTATUSEX)
-    return, % (GMS = "1") ? NumGet(MEMORYSTATUSEX,  8, "Int64") : (GMS = "2") ? NumGet(MEMORYSTATUSEX, 16, "Int64") : "FAIL"
+GlobalMemoryStatusEx() {
+	static MSEx, init := VarSetCapacity(MSEx, 64, 0) && NumPut(64, MSEx, "UInt")
+    DllCall(Kernel32.GlobalMemoryStatusEx, "Ptr", &MSEx)
+    return, { 1 : NumGet(MSEx,  8, "Int64"), 2 : NumGet(MSEx, 16, "Int64") }
 }
 
 ; GetProcessMemoryInfo ==============================================================
