@@ -1,4 +1,9 @@
-﻿; ===================================================================================
+﻿; VERSION MODIFED BY MasterFocus
+; http://www.auto-hotkey.com/boards/viewtopic.php?f=6&t=254&p=2487#p2487
+; (search this code for "[MF]" to find my modifications)
+; 16/october/2013 01:23h BRT (UTC-3)
+
+; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
 ; Description ...: htopmini v0.6.3
@@ -34,7 +39,9 @@ Menu, Tray, Add,
 Menu, Tray, Add, Exit, Close
 Menu, Tray, Default, Show/Hide
 
-Gui +LastFound -Caption +ToolWindow
+Menu, Tray, ToggleCheck, Toggle Transparency ; [MF] Added for consistency
+
+Gui +LastFound -Caption +ToolWindow +E0x08000000 ; [MF] ExStyle added
 Gui, Margin, 10, 10
 Gui, Color, 000000
 Gui, Font, cFFFFFF, Consolas
@@ -135,15 +142,15 @@ SetTimer, UpdateDrive, -1000
 return
 
 Move:
-    PostMessage, 0xA1, 2,,, A
+    PostMessage, 0xA1, 2,,, htopmini ; [MF] Using 'hminitop' instead of 'A'
 return
 
 UpdateTime:
-    GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(DllCall("GetTickCount64") / 1000)
+    GuiControl,, Time01, % "Time: " A_Hour ":" A_Min ":" A_Sec " | Uptime: " FormatSeconds(DllCall(Kernel32.GetTickCount64) / 1000)
 return
 
 UpdateWeather:
-    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=693838&u=c")
+    url := DownloadToString("http://weather.yahooapis.com/forecastrss?w=455825&u=c")
     RegExMatch(url, "(?<=Weather for )(.*)(?=\<\/description\>\s\<language\>)", varCity)
     RegExMatch(url, "(?<=temp="")(.*)(?=""  date)", varTemp)
     RegExMatch(url, "(?<=temperature="")(.*)(?=""\s*distance)", varUnits)
@@ -152,12 +159,16 @@ UpdateWeather:
 return
 
 UpdateMemory:
-    GuiControl,, RAM1, % Round(GlobalMemoryStatusEx(2) - GlobalMemoryStatusEx(3), 2) " MB"
-    GuiControl,, RAM2, % GlobalMemoryStatusEx(3) " MB"
-    GuiControl,, RAM3, % GlobalMemoryStatusEx(2) " MB"
-    GuiControl, % (GlobalMemoryStatusEx(1) <= "75") ? "+c00FF00" : (GlobalMemoryStatusEx(1) <= "90") ? "+cFFA500" : "+cFF0000", RAM4
-    GuiControl,, RAM4, % GlobalMemoryStatusEx(1)
-    GuiControl,, RAM5, % (varPerc = "1") ? Round((GlobalMemoryStatusEx(2) - GlobalMemoryStatusEx(3)) / GlobalMemoryStatusEx(3) * 100, 2) " %" : ""
+    GlobMemStat2 := GlobalMemoryStatusEx(2) ; total memory in MB
+    GlobMemStat3 := GlobalMemoryStatusEx(3) ; free memory in MB
+    GlobMemStat1 := Round(GlobMemStat2 - GlobMemStat3, 2) ; used memory in MB
+    GuiControl,, RAM1, % GlobMemStat1 " MB"
+    GlobMemStat1 := Round((GlobMemStat2 - GlobMemStat3) / GlobMemStat2 * 100, 2) ; percentage of used memory
+    GuiControl,, RAM2, % GlobMemStat3 " MB"
+    GuiControl,, RAM3, % GlobMemStat2 " MB"
+    GuiControl, % (GlobMemStat1 <= "75") ? "+c00FF00" : (GlobMemStat1 <= "90") ? "+cFFA500" : "+cFF0000", RAM4
+    GuiControl,, RAM4, % GlobMemStat1
+    GuiControl,, RAM5, % (varPerc = "1") ? GlobMemStat1 " %" : ""
     SetTimer, UpdateMemory, 2000
 return
 
@@ -237,31 +248,43 @@ return
 
 TogPerc:
     varPerc := (varPerc = "0") ? "1" : "0"
+    Menu, Tray, ToggleCheck, Toggle Percentage ; [MF]
 return
 
 Transparency:
     WinGet, ct, Transparent, htopmini
     WinSet, Transparent, % ct = "150" ? "Off" : "150", htopmini
+    Menu, Tray, ToggleCheck, Toggle Transparency ; [MF]
 return
 
 ShowHide:
-    if WinExist("htopmini")
+    WinGet, winStyle, Style, htopmini
+    If (winStyle & 0x10000000)
         WinHide, htopmini
     else
+    {
         WinShow, htopmini
+        WinSet, AlwaysOnTop, Toggle, htopmini
+        WinSet, AlwaysOnTop, Toggle, htopmini
+    }
 return
+
 
 OnTop:
     WinSet, AlwaysOnTop, Toggle, htopmini
+    Menu, Tray, ToggleCheck, Toggle AlwaysOnTop ; [MF]
 return
 
 Close:
     ExitApp
 return
 
+; [MF] Stuff I don't use, commented out
+/*
 +WheelUp::   AdjustBrightness(+1)
 +XButton2::  DisplaySetBrightness(128)
 +WheelDown:: AdjustBrightness(-1)
+*/
 
 ; FUNCTIONS =========================================================================
 
