@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.01 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.7.2
-; Version .......: 2013.10.18-1956
+; Description ...: htopmini v0.7.4
+; Version .......: 2013.10.18-0918
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.18-1956
+;@Ahk2Exe-SetVersion 2013.10.18-0918
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -24,10 +24,10 @@
 global Kernel32 := LoadLibrary("Kernel32")
 global WinTitel := "htopmini " A_Now
 global varPerc := 0
-global Weather_ID := "693838"                      ; Yahoo Weather Location ID
-global Weather_DG := "c"                           ; Celius = c | Fahrenheit = f
+global Weather_ID := "693838"                            ; Yahoo Weather Location ID
+global Weather_DG := "c"                                 ; Celius = c | Fahrenheit = f
 global ownPID := DllCall(Kernel32.GetCurrentProcessId)
-global mylogData := ""
+global BuildVersion := DllCall("GetVersion") >> 16 & 0xffff
 
 
 ; ###################################################################################
@@ -136,13 +136,10 @@ Gui, Add, Text,     xm+40  yp   w80 0x202 vOU1,
 Gui, Add, Progress, xm+130 yp+1 w170 h10 cFF0000 Range0-2000 -0x1 vOU2,
 Gui, Add, Text,     xm     y+3  w430 h1 0x7
 
-;Gui, Font, c00FF00,
-;Gui, Add, Edit,     xm     y+7 0x0800 w430 r10 vMyLog
 Gui, Font, cFFFFFF,
-Gui, Add, Text,     xm     y+15 w150 0x200 vOwnMem,
-Gui, Add, Button,   xm+170 yp-10 w80 -Theme 0x8000 gClearM, ClearMem
-Gui, Add, Button,   xm+260 yp w80 -Theme 0x8000 gClearL, ClearLog
-Gui, Add, Button,   xm+350 yp w80 -Theme 0x8000 gClose, Close
+Gui, Add, Text,     xm     y+10 w150 0x200 vOwnMem,
+Gui, Add, Button,   xm+305 yp-6 w60 h20 -Theme 0x8000 gMinimi, Minimi
+Gui, Add, Button,   xm+370 yp w60 h20 -Theme 0x8000 gClose, Close
 Gui, Show, AutoSize, %WinTitel%
 WinSet, Transparent, 150, %WinTitel%
 
@@ -152,7 +149,6 @@ SetTimer, UpdateMemory, -1000
 SetTimer, UpdateTraffic, 1000
 SetTimer, UpdateDrive, -1000
 SetTimer, UpdateMemHtop, -1000
-;SetTimer, ClearM, 60000
 
 OnMessage(0x201, "WM_LBUTTONDOWN")
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd)
@@ -182,7 +178,7 @@ UpdateWeather:
 return
 
 UpdateMemory:
-	GMSEx := GlobalMemoryStatusEx()
+    GMSEx := GlobalMemoryStatusEx()
     GMSEx1 := Round(GMSEx[2] / 1024**2, 2)
     GMSEx2 := Round(GMSEx[3] / 1024**2, 2)
     GMSEx3 := Round(GMSEx1 - GMSEx2, 2)
@@ -259,32 +255,22 @@ UpdateDrive:
 return
 
 UpdateMemHtop:
-	GVEx := GetVersionEx()
-	if (GVEx[3] >= "7600")
-	{
-		GPMI := GetProcessMemoryInfo_PMCEX(ownPID)
-		PUsage := Round(GPMI[10] / 1024, 0)
-	}
-	else
-	{
-		GPMI := GetProcessMemoryInfo_PMC(ownPID)
-		PUsage := Round(GPMI[8] / 1024, 0)
-	}
+    if (BuildVersion >= "7600")
+    {
+        GPMI := GetProcessMemoryInfo_PMCEX(ownPID)
+        PUsage := Round(GPMI[10] / 1024, 0)
+    }
+    else
+    {
+        GPMI := GetProcessMemoryInfo_PMC(ownPID)
+        PUsage := Round(GPMI[8] / 1024, 0)
+    }
     GuiControl,, OwnMem, % "PID: " ownPID " | " PUsage " K"
     SetTimer, UpdateMemHtop, 2000
 return
 
-ClearM:
-	GMSEx := GlobalMemoryStatusEx()
-    GMSEx_A := GMSEx[3] / 1024**2
-    ClearMemory()
-    FreeMemory()
-    GMSEx_B := GMSEx[3] / 1024**2
-    LogLn(A_Hour ":" A_Min ":" A_Sec " | Cleared Memory: " Round(GMSEx_B - GMSEx_A, 2) " MB")
-return
-
-ClearL:
-    LogClear()
+Minimi:
+    Gui, Hide
 return
 
 Menu_Percentage:
@@ -315,10 +301,6 @@ Menu_ShowHide:
     }
 return
 
-+WheelUp::   AdjustBrightness(+1)
-+XButton2::  DisplaySetBrightness(128)
-+WheelDown:: AdjustBrightness(-1)
-
 
 ; ###################################################################################
 ; ### FUNCTIONS                                                                   ###
@@ -344,16 +326,9 @@ DownloadToString(url, encoding="utf-8") {
 
 ; GlobalMemoryStatus ================================================================
 GlobalMemoryStatusEx() {
-	static MSEx, init := VarSetCapacity(MSEx, 64, 0) && NumPut(64, MSEx, "UInt")
+    static MSEx, init := VarSetCapacity(MSEx, 64, 0) && NumPut(64, MSEx, "UInt")
     DllCall(Kernel32.GlobalMemoryStatusEx, "Ptr", &MSEx)
     return, { 2 : NumGet(MSEx,  8, "Int64"), 3 : NumGet(MSEx, 16, "Int64") }
-}
-
-; GetVersionEx ======================================================================
-GetVersionEx() {
-    static OSVEREX, init := VarSetCapacity(OSVEREX, 284, 0) && Numput(284, OSVEREX, "UInt")
-    if (DllCall(Kernel32.GetVersionEx, "Ptr", &OSVEREX))
-        return, { 3 : NumGet(OSVEREX, 12, "UInt") }
 }
 
 ; GetProcessMemoryInfo ==============================================================
@@ -390,18 +365,6 @@ FormatSeconds(NumberOfSeconds, TimeFormat = "") {
     return Output1
 }
 
-; LogLn =============================================================================
-LogLn(line) {
-    global
-    mylogData .= line "`n"
-    GuiControl,, MyLog, % mylogData
-}
-LogClear() {
-    global
-    mylogData := ""
-    GuiControl,, MyLog, % mylogData
-}
-
 ; NetTraffic ========================================================================
 GetIfTable(ByRef tb, bOrder = True) {
     nSize := 4 + 860 * GetNumberOfInterfaces() + 8
@@ -419,39 +382,6 @@ GetNumberOfInterfaces() {
 }
 DecodeInteger(ptr) {
     return *ptr | *++ptr << 8 | *++ptr << 16 | *++ptr << 24
-}
-
-; ClearMemory =======================================================================
-ClearMemory() {
-    for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process") {
-        handle := DllCall(Kernel32.OpenProcess, "UInt", 0x001F0FFF, "UInt", 0, "UInt", process.ProcessID)
-        DllCall("SetProcessWorkingSetSize", "UInt", handle, "Int", -1, "Int", -1)
-        DllCall("psapi.dll\EmptyWorkingSet", "UInt", handle)
-		DllCall(Kernel32.CloseHandle, "Ptr", handle)
-    }
-    return
-}
-FreeMemory() {
-    return, DllCall("psapi.dll\EmptyWorkingSet", "UInt", -1)
-}
-
-; DisplayBrightness =================================================================
-AdjustBrightness(V = 0) {
-    V := (GetKeyState("XButton1") && V > 0) ? V + 9 : (GetKeyState("XButton1") && V < 0) ? V - 9 : V
-    SB := (SB := DisplayGetBrightness() + V) > 255 ? 255 : SB < 0 ? 0 : SB
-    DisplaySetBrightness(SB)
-}
-DisplaySetBrightness(SB = 128) {
-    loop, % VarSetCapacity(GB, 1536) / 6
-        NumPut((N := (SB + 128) * (A_Index - 1)) > 65535 ? 65535 : N, GB, 2 * (A_Index - 1), "UShort")
-    DllCall("RtlMoveMemory", UInt, &GB +  512, UInt, &GB, UInt, 512)
-    DllCall("RtlMoveMemory", UInt, &GB + 1024, UInt, &GB, UInt, 512)
-    return DllCall("SetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB), DllCall("ReleaseDC", UInt, 0, UInt, hDC)
-}
-DisplayGetBrightness(ByRef GB = "") {
-    VarSetCapacity(GB, 1536, 0)
-    DllCall("GetDeviceGammaRamp", UInt, hDC := DllCall("GetDC", UInt, 0), UInt, &GB)
-    return NumGet(GB, 2, "UShort") - 128, DllCall("ReleaseDC", UInt, 0, UInt, hDC)
 }
 
 ; LoadLibrary =======================================================================
