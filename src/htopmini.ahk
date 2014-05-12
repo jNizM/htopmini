@@ -1,15 +1,15 @@
 ﻿; ===================================================================================
 ; AHK Version ...: AHK_L 1.1.13.00 x64 Unicode
 ; Win Version ...: Windows 7 Professional x64 SP1
-; Description ...: htopmini v0.4
-; Version .......: 2013.10.13-0043
+; Description ...: htopmini v0.5.1
+; Version .......: 2013.10.14-1159
 ; Author ........: jNizM
 ; License .......: WTFPL
 ; License URL ...: http://www.wtfpl.net/txt/copying/
 ; ===================================================================================
 ;@Ahk2Exe-SetName htopmini
 ;@Ahk2Exe-SetDescription htopmini
-;@Ahk2Exe-SetVersion 2013.10.13-0043
+;@Ahk2Exe-SetVersion 2013.10.14-1159
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013`, jNizM
 ;@Ahk2Exe-SetOrigFilename htopmini.ahk
 
@@ -131,7 +131,7 @@ UpdateMemory:
     GuiControl,, RAM1, % Round(GlobalMemoryStatusEx(2) - GlobalMemoryStatusEx(3), 2) " MB"
     GuiControl,, RAM2, % GlobalMemoryStatusEx(3) " MB"
     GuiControl,, RAM3, % GlobalMemoryStatusEx(2) " MB"
-    GuiControl, % (GlobalMemoryStatusEx(1) <= "75") ? "+c00FF00" : "+cFF0000", RAM4
+    GuiControl, % (GlobalMemoryStatusEx(1) <= "75") ? "+c00FF00" : (GlobalMemoryStatusEx(1) <= "90") ? "+cFFA500" : "+cFF0000", RAM4
     GuiControl,, RAM4, % GlobalMemoryStatusEx(1)
 return
 
@@ -163,7 +163,8 @@ UpdateDrive:
         GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
         GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
-        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "75") ? "+c00FF00" : "+cFF0000", D%A_Loopfield%4
+        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "80") ? "+c00FF00"
+                    : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
     loop, Parse, DrvLstRmvbl
@@ -174,7 +175,8 @@ UpdateDrive:
         GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
         GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
-        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "75") ? "+c00FF00" : "+cFF0000", D%A_Loopfield%4
+        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "80") ? "+c00FF00"
+                    : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
 	loop, Parse, DrvLstNtwrk
@@ -185,7 +187,8 @@ UpdateDrive:
         GuiControl,, D%A_Loopfield%2, % Round(free%A_Loopfield% / 1024, 2) " GB"
         GuiControl,, D%A_Loopfield%3, % Round(cap%A_Loopfield% / 1024, 2) " GB"
         GuiControl, % "+Range0-" cap%A_Loopfield%, D%A_Loopfield%4
-        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "75") ? "+c00FF00" : "+cFF0000", D%A_Loopfield%4
+        GuiControl, % ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "80") ? "+c00FF00"
+                    : ((cap%A_Loopfield% - free%A_Loopfield%) / cap%A_Loopfield% * 100 <= "90") ? "+cFFA500" : "+cFF0000", D%A_Loopfield%4
         GuiControl,, D%A_Loopfield%4, % cap%A_Loopfield% - free%A_Loopfield%
     }
 	SetTimer, UpdateDrive, 2000
